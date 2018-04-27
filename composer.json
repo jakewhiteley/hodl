@@ -13,7 +13,11 @@
     ],
     "autoload": {
         "psr-4": {
-            "Hodl\\": "src/",
+            "Hodl\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": { 
             "Hodl\\Tests\\": "tests/"
         }
     },
@@ -33,7 +37,10 @@
             "phpcbf --ignore=vendor --extensions=php --standard=PSR2 ."
         ],
         "test": [
-            "vendor/bin/phpunit"
+            "vendor/bin/phpunit --coverage-text"
+        ],
+        "report": [
+            "vendor/bin/phpunit --coverage-html coverage"
         ]
     }
 }

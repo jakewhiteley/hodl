@@ -136,6 +136,8 @@ class Container implements \ArrayAccess, ContainerInterface
             return new $class;
         }
 
+        $newInstanceParams = [];
+
         foreach ($params as $param) {
             // if the param is not a class, check $args for the value
             if (is_null($param->getClass())) {
