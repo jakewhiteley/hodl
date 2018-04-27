@@ -1,0 +1,35 @@
+{
+    "name": "jakewhieteley/hodl",
+    "license": "MIT",
+    "description": "tbc",
+    "authors": [
+        {
+            "name": "Jake Whiteley",
+            "email": "jakebwhiteley@gmail.com"
+        }
+    ],
+    "keywords": [
+        "tbc"
+    ],
+    "autoload": {
+        "psr-4": {
+            "Hodl\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=5.6",
+        "psr/container": "*"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "~3.0",
+        "phpunit/phpunit": "~7.0" 
+    },
+    "scripts": {
+        "sniff": [
+            "phpcs --ignore=vendor --extensions=php --standard=PSR2 ."
+        ],
+        "fix": [
+            "phpcbf --ignore=vendor --extensions=php --standard=PSR2 ."
+        ]
+    }
+}
