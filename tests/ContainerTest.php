@@ -4,6 +4,7 @@ namespace Hodl\Tests;
 
 use Hodl\Container;
 use Hodl\Exceptions\ContainerException;
+use Hodl\Exceptions\NotFoundException;
 
 class ContainerTest extends \PHPUnit\Framework\TestCase
 {
@@ -15,6 +16,16 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $hodl = new Container();
         $this->assertInstanceOf(\Psr\Container\ContainerInterface::class, $hodl);
     }	
+
+    /** 
+	 * @test
+	 */
+    public function exceptions_are_psr11_compliant()
+    {
+    	$containerException = new ContainerException;
+    	var_dump($containerException,$containerException instanceof \Psr\Container\CountainerExceptionInterface);
+        $this->assertTrue($containerException instanceof \Psr\Container\CountainerExceptionInterface);
+    }
 
     /** 
      * @test
@@ -48,6 +59,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      * @depends an_object_can_be_added_to_the_container
+     * @return Hodl\Container An instance of Container containing a DummyClass instance.
      */
     public function get_returns_the_same_instance_every_time(Container $hodl)
     {
@@ -56,5 +68,18 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
     	$this->assertSame($firstAttempt, $secondAttempt);
     	$this->assertSame($firstAttempt->foo, $secondAttempt->foo);
+
+    	return $hodl;
+    }    
+
+    /**
+     * @test
+     * @depends get_returns_the_same_instance_every_time
+     */
+    public function get_throws_NotFoundException_when_key_not_present(Container $hodl)
+    {
+    	$this->expectException(NotFoundException::class);
+
+    	$hodl->get('doesnt_exist');
     }
 }

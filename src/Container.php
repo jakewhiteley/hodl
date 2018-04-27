@@ -92,7 +92,7 @@ class Container implements \ArrayAccess, ContainerInterface
      */
     public function get($key)
     {
-        if (! is_string($key)) {
+        if (! is_string($key) || empty($key)) {
             throw new Exceptions\ContainerException('$key must be a string');
         }
 
@@ -113,7 +113,7 @@ class Container implements \ArrayAccess, ContainerInterface
         }
 
         // the key was not found
-        return false;
+        throw new Exceptions\NotFoundException("The key [$key] could not be found");
     }
 
     public function resolve($class, $args = [])
