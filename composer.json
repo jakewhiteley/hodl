@@ -13,7 +13,8 @@
     ],
     "autoload": {
         "psr-4": {
-            "Hodl\\": "src/"
+            "Hodl\\": "src/",
+            "Hodl\\Tests\\": "tests/"
         }
     },
     "require": {
@@ -30,6 +31,9 @@
         ],
         "fix": [
             "phpcbf --ignore=vendor --extensions=php --standard=PSR2 ."
+        ],
+        "test": [
+            "vendor/bin/phpunit"
         ]
     }
 }

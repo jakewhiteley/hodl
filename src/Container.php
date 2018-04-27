@@ -1,10 +1,12 @@
 <?php
 namespace Hodl;
 
+use Psr\Container\ContainerInterface;
+
 /**
  * A simple DI container
  */
-class Container implements \ArrayAccess
+class Container implements \ArrayAccess, ContainerInterface
 {
     /**
      * Stores a map of the registered keys and their closures
@@ -22,50 +24,6 @@ class Container implements \ArrayAccess
     private $store = [];
 
     public $resolutionMap = [];
-
-    /**
-     * Sets the value at specified offset
-     *
-     * @param  string  $offset The key to set
-     * @param  closure $value  The value to set
-     */
-    public function offsetSet($offset, $value)
-    {
-        $this->add($offset, $value);
-    }
-
-    /**
-     * Checks if a given offset exists
-     *
-     * @param  string  $offset The key to set
-     * @return  bool
-     */
-    public function offsetExists($offset)
-    {
-        return $this->has($offset);
-    }
-
-    /**
-     * Gets the value at specified offset.
-     *
-     * @param  string  $offset The key to get
-     * @return  object|closure  $value  The object instance or closure if a factory class
-     */
-    public function offsetGet($offset)
-    {
-        return $this->get($offset);
-    }
-
-    /**
-     * Unsets the value at specified offset.
-     *
-     * @param  string  $offset The key to set
-     * @return  bool
-     */
-    public function offsetUnset($offset)
-    {
-        return $this->remove($offset);
-    }
 
     /**
      * Add a class.
@@ -94,13 +52,50 @@ class Container implements \ArrayAccess
     }
 
     /**
+     * Check if a given key exists within this container, either as an object or a factory
+     *
+     * @param  string  $key The key to check for
+     * @return boolean      If the key exists
+     */
+    public function has($key)
+    {
+        return $this->hasObject($key) || $this->hasFactory($key);
+    }
+
+    /**
+     * Check if a given key exists as an object within this container
+     *
+     * @param  string  $key The key to check for
+     * @return boolean      If the key exists
+     */
+    public function hasObject($key)
+    {
+        return isset($this->map['persistent'][$key]);
+    }
+
+    /**
+     * Check if a given key exists as a factory class within this container
+     *
+     * @param  string  $key The key to check for
+     * @return boolean      If the key exists
+     */
+    public function hasFactory($key)
+    {
+        return isset($this->map['factory'][$key]);
+    }
+
+    /**
      * Retreieves an object for a given key
      *
      * @param  string $key  The key to lookup
      * @return object|bool  The requested object. False if not present
      */
-    public function get(string $key)
+    public function get($key)
     {
+        if (! is_string($key)) {
+            throw new Exceptions\ContainerException('$key must be a string');
+        }
+
         // if this class has already been initialised
         if (isset($this->store[$key])) {
             return $this->store[$key];
@@ -217,35 +212,46 @@ class Container implements \ArrayAccess
     }
 
     /**
-     * Check if a given key exists within this container, either as an object or a factory
+     * Sets the value at specified offset
      *
-     * @param  string  $key The key to check for
-     * @return boolean      If the key exists
+     * @param  string  $offset The key to set
+     * @param  closure $value  The value to set
      */
-    public function has($key)
+    public function offsetSet($offset, $value)
     {
-        return $this->hasObject('factory') || $this->hasFactory('factory');
+        $this->add($offset, $value);
     }
 
     /**
-     * Check if a given key exists as an object within this container
+     * Checks if a given offset exists
      *
-     * @param  string  $key The key to check for
-     * @return boolean      If the key exists
+     * @param  string  $offset The key to set
+     * @return  bool
      */
-    public function hasObject($key)
+    public function offsetExists($offset)
     {
-        return isset($this->map['persistent'][$key]);
+        return $this->has($offset);
     }
 
     /**
-     * Check if a given key exists as a factory class within this container
+     * Gets the value at specified offset.
      *
-     * @param  string  $key The key to check for
-     * @return boolean      If the key exists
+     * @param  string  $offset The key to get
+     * @return  object|closure  $value  The object instance or closure if a factory class
      */
-    public function hasFactory($key)
+    public function offsetGet($offset)
     {
-        return isset($this->map['factory'][$key]);
+        return $this->get($offset);
+    }
+
+    /**
+     * Unsets the value at specified offset.
+     *
+     * @param  string  $offset The key to set
+     * @return  bool
+     */
+    public function offsetUnset($offset)
+    {
+        return $this->remove($offset);
     }
 }
