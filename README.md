@@ -1,73 +1,58 @@
-# Jaws DI Container
-
+# Hodl DI
 
 [![Travis](https://img.shields.io/travis/jakewhiteley/hodl.svg?style=for-the-badge)](https://travis-ci.org/jakewhiteley/hodl) 
-[![Packagist](https://img.shields.io/packagist/v/jakewhiteley/hodl.svg?style=for-the-badge)](https://packagist.org/packages/jakewhitley/hodl) 
+[![Packagist](https://img.shields.io/packagist/v/jakewhiteley/hodl.svg?style=for-the-badge)](https://packagist.org/packages/jakewhiteley/hodl) 
 [![PHP from Packagist](https://img.shields.io/packagist/php-v/jakewhiteley/hodl.svg?style=for-the-badge)](https://packagist.org/packages/jakewhiteley/hodl)
 
 
 
+Hodl provides full autowiring capabilities for Inversion of Control, but is simple enough to use as a standalone service container without any faff.
 
-A simple Service container which takes inspiration from both Laravel and Pimple (Symfony).
+It's a simple `ArrayAccess` Service container which takes inspiration from both Laravel and Pimple (Symfony), but sits comfortably in the middle.
 
 ## Basic Usage
 
-A class can be added to the container as follows:
+A service can be added to the container as follows:
 
 ```` php
-use \Some\Namespace\Foo;
-
-$hodl[Foo::class] = function(){
-    return new Foo();
-};
-
-// or
-$hodl->add(Foo::class, function() {
+$hodl->add('Some\Namespace\Foo', function() {
 	return new Foo();
 });
 ````
 
-And then called using any of the following:
+And then to get a service:
 
 ```` php
-$foo = $hodl[Foo::class];
-
-$foo = $hodl->get(Foo::class);
+$foo = $hodl->get('Some\Namespace\Foo');
 ````
 
-When adding a new class or factory, the closure which returns the class is passed an instance of the DI Container which can be used for passing arguments derived from services already within the container:
+When adding a new class definition, the callable which returns the class is passed an instance of Hodl, which can be used for passing arguments derived from services already within the container:
 
 ```` php
-$hodl['Baz'] = function($hodl) {
-	return new Baz($hodl[Foo::class]->propertyName, 'string');
-};
-````
-
-## Factories
-
-The above example will return the same instance of Foo no matter when it is called.
-You can also specify that a new instance should be returned each time by using the `addFactory()` method:
-
-```` php
-$hodl->addFactory(Bar::class, function() {
-	return new Bar();
+$hodl->get('Baz', function($hodl) {
+	return new Baz($hodl->get('Some\Namespace\Foo')->someProp);
 });
 ````
+**Note**
+You should always register a service using it's full class name. This is so that the autowiring can work and classes can have their dependencies injected with no fuss.
 
-## Checking if a key exists
+## Checking if a service exists
 
-As all objects are referenced by the key you defined it with, you can use has() to check if that key has been defined previously:
+As all services are referenced by the key you defined it with, you can use `has()` to check if that key has been defined previously:
 
 ```` php
-$hodl[Foo::class] = function() {
+use Namespace\Foo;
+
+// using the ::class shorthand
+$hodl->add(Foo::class, function() {
     return new Foo();
-};
+});
 
 $hodl->has(Foo::class); // true
 $hodl->has('some\other\class'); // false
 ````
 
-## Removing classes
+## Removing services
 
 As the Container implements ArrayAccess you can use `unset()` or the `remove()` method to remove a class:
 ```` php
@@ -81,6 +66,41 @@ $hodl->remove('foo');
 
 $hodl->has('foo'); // false
 ````
+
+
+## ArrayAccess style
+
+As Hodl implements `ArrayAccess`, you can achieve the above like this instead:
+
+````php
+// add
+$hodl['Some\Namespace\Foo'] = function(){
+    return new Foo();
+};
+
+// get
+$foo = $hodl['Some\Namespace\Foo'];
+
+// check
+if (isset($hodl['Some\Namespace\Foo')) // ...
+
+// remove
+unset($hodl['Some\Namespace\Foo']);
+````
+
+
+## Factories
+
+The above example will return the same instance of Foo no matter when it is called.
+You can also specify that a new instance should be returned each time by using the `addFactory()` method:
+
+```` php
+$hodl->addFactory(Bar::class, function() {
+	return new Bar();
+});
+````
+
+
 
 ## Resolving Classes
 
