@@ -160,8 +160,6 @@ The keys of this array must be the variable name of the parameter.
 $foo = $hodl->resolve('Foo\Foo', [
 	'someInt' => 42
 ]);
-
-// Foo will recieve 42 as $someInt, but as we didn't specify $someString, the default of 'string' will be used
 ````
 
 ## Resolving using services
