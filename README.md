@@ -22,16 +22,6 @@ $hodl->add('Some\Namespace\Foo', function() {
 
 You should always register a service using it's full class name. This is so that the autowiring can work and classes can have their dependencies injected with no fuss.
 
-### Service definitions
-
-When adding a new class definition, the `callable` which returns the class is passed an instance of `Hodl`, which can be used for passing arguments derived from services already within the container:
-
-```` php
-$hodl->get('Baz', function($hodl) {
-	return new Baz($hodl->get('Some\Namespace\Foo')->someProp);
-});
-````
-
 ## Retrieving a service
 
 As simple as it gets:
@@ -71,7 +61,6 @@ $hodl->remove('foo');
 $hodl->has('foo'); // false
 ````
 
-
 ## ArrayAccess style
 
 As Hodl implements `ArrayAccess`, you can achieve the above like this instead:
@@ -92,10 +81,19 @@ if (isset($hodl['Some\Namespace\Foo')) // ...
 unset($hodl['Some\Namespace\Foo']);
 ````
 
+### Service definitions
+
+When adding a new service definition, the `callable` which returns the class is passed an instance of `Hodl`, which can be used for passing arguments derived from services already within the container. **Note** You should not pass services directly into the constructor of your service. For that we have the magic of [autowiring](#autowiring-resolving-dependencies).
+
+```` php
+$hodl->get('Baz', function($hodl) {
+	return new Baz($hodl->get('Some\Namespace\Foo')->someProp);
+});
+````
 
 ## Factories
 
-The above example will return the same instance of Foo no matter when it is called.
+The above examplse will return the same instance of the service no matter when it is fetched.
 You can also specify that a new instance should be returned each time by using the `addFactory()` method:
 
 ```` php
@@ -104,9 +102,21 @@ $hodl->addFactory(Bar::class, function() {
 });
 ````
 
+## Instances
+You can also add a specific instance as a service. As this is already booted, `Hodl` can derrive the class name pretty easily so there is no need to supply that.
 
+````php
+$instance = new Foo\Bar();
+$instance->prop = 'foobar';
 
-## Resolving Classes
+$hodl->addInstance($instance);
+
+// ...
+
+$hodl->get('Foo\Bar')->prop // equals 'foobar'
+````
+
+## Autowiring (resolving dependencies)
 
 Aside as using it as a container for passing objects around, it can also be used to auotmatically resolve objects using the Reflection API.
 
