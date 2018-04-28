@@ -1,8 +1,6 @@
 # Hodl DI
 
-[![Travis](https://img.shields.io/travis/jakewhiteley/hodl.svg?style=for-the-badge)](https://travis-ci.org/jakewhiteley/hodl) 
-[![Packagist](https://img.shields.io/packagist/v/jakewhiteley/hodl.svg?style=for-the-badge)](https://packagist.org/packages/jakewhiteley/hodl) 
-[![PHP from Packagist](https://img.shields.io/packagist/php-v/jakewhiteley/hodl.svg?style=for-the-badge)](https://packagist.org/packages/jakewhiteley/hodl)
+[![Travis](https://img.shields.io/travis/jakewhiteley/hodl.svg?style=for-the-badge)](https://travis-ci.org/jakewhiteley/hodl) [![PHP from Packagist](https://img.shields.io/packagist/php-v/jakewhiteley/hodl.svg?style=for-the-badge)](https://packagist.org/packages/jakewhiteley/hodl)
 
 
 
