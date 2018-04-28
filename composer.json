@@ -1,7 +1,7 @@
 {
-    "name": "jakewhieteley/hodl",
+    "name": "jakewhiteley/hodl",
     "license": "MIT",
-    "description": "tbc",
+    "description": "A lightweight dependency injection cointainer for PHP, which sites inbetween Pimple and the Laravel Container",
     "authors": [
         {
             "name": "Jake Whiteley",
@@ -9,7 +9,12 @@
         }
     ],
     "keywords": [
-        "tbc"
+        "DI",
+        "php",
+        "container",
+        "services",
+        "inversion of control",
+        "automatically resolve"
     ],
     "autoload": {
         "psr-4": {
