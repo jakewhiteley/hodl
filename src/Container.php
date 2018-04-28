@@ -3,29 +3,20 @@ namespace Hodl;
 
 use Psr\Container\ContainerInterface;
 use Hodl\Exceptions\ContainerException;
-use Hodl\Exceptions\InvalidKeyException;
 use Hodl\Exceptions\NotFoundException;
-use Hodl\Exceptions\KeyExistsException;
 
 /**
- * A simple DI container
+ * A simple Service container with automatic constructor resolution abilities.
+ *
+ * A Frankenstein based on Pimple and Laravel Container.
  */
 class Container extends ContainerArrayAccess implements ContainerInterface
 {
     /**
-     * Stores a map of the registered keys and their closures.
-     * @var array
+     * Holds the object storage class.
+     * @var Hodl\ObjectStorage
      */
-    private $map = [
-        'persistent' => [],
-        'factory'    => [],
-    ];
-
-    /**
-     * Stores initialized objects.
-     * @var array
-     */
-    private $store = [];
+    private $storage;
 
     /**
      * Stores current resolution stack.
@@ -33,10 +24,19 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     private $resolutions = [];
 
+    /**
+     * Boot up.
+     *
+     * @since 1.0.0
+     */
+    public function __construct()
+    {
+        $this->storage = new ObjectStorage();
+    }
 
     /**
      * Add a class.
-     * 
+     *
      * This class is initialized when first retrieved via get(), and is persistent unless explicitly destroyed.
      *
      * @since 1.0.0
@@ -47,13 +47,12 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     public function add(string $key, callable $closure)
     {
-        $this->checkKey($key);
-        $this->map['persistent'][$key] = $closure;
+        $this->storage->object($key, $closure);
     }
 
     /**
      * Add a factory class.
-     * 
+     *
      * Classes added via this method will return as a new instance when retrieved.
      *
      * @since 1.0.0
@@ -64,15 +63,14 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     public function addFactory(string $key, callable $closure)
     {
-        $this->checkKey($key);
-        $this->map['factory'][$key] = $closure;
+        $this->storage->factory($key, $closure);
     }
 
     /**
      * Add a specific object instance to the container.
      *
      * @since 1.0.0
-     * 
+     *
      * @param string|object $key    The key to add the instance as. Can be omitted.
      *                              If an object is passed and the key is omitted, the namespaced class name
      *                              will be used instead.
@@ -81,14 +79,9 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     public function addInstance($key, $object = null)
     {
         if (is_object($key)) {
-            $name = get_class($key);
-            $this->map['persistent'][$name] = true;
-            $this->store[$name] = $key;
-            return $this;
+            $this->storage->instance(get_class($key), $key);
         } elseif (is_object($object)) {
-            $this->checkKey($key);
-            $this->map['persistent'][$key] = true;
-            $this->store[$key] = $object;
+            $this->storage->instance($key, $object);
         } else {
             throw new ContainerException('An object instance must be passed');
         }
@@ -102,35 +95,9 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * @param  string  $key The key to check for.
      * @return boolean      If the key exists.
      */
-    public function has(string $key)
+    public function has($key)
     {
-        return $this->hasObject($key) || $this->hasFactory($key);
-    }
-
-    /**
-     * Check if a given key exists as an object within this container.
-     *
-     * @since 1.0.0
-     *
-     * @param  string  $key The key to check for.
-     * @return boolean      If the key exists.
-     */
-    public function hasObject(string $key)
-    {
-        return isset($this->map['persistent'][$key]);
-    }
-
-    /**
-     * Check if a given key exists as a factory class within this container.
-     *
-     * @since 1.0.0
-     *
-     * @param  string  $key The key to check for.
-     * @return boolean      If the key exists.
-     */
-    public function hasFactory(string $key)
-    {
-        return isset($this->map['factory'][$key]);
+        return $this->storage->hasObject($key) || $this->storage->hasFactory($key);
     }
 
     /**
@@ -140,30 +107,28 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @throws Hodl\Exceptions\ContainerException if the $key is not a valid string.
      * @throws Hodl\Exceptions\NotFoundException  if the $key was not present.
-     * 
+     *
      * @param  string $key  The key to lookup.
      * @return object|bool  The requested object.
      */
-    public function get(string $key)
+    public function get($key)
     {
         if (! is_string($key) || empty($key)) {
             throw new ContainerException('$key must be a string');
         }
 
-        // if this class has already been initialized
-        if (isset($this->store[$key])) {
-            return $this->store[$key];
+        if ($this->storage->hasStored($key)) {
+            return $this->storage->getStored($key);
         }
 
-        // check to see if the class has been registered
-        if ($this->hasObject($key)) {
-            $this->store[$key] = $this->map['persistent'][$key]($this);
-            return $this->store[$key];
+        // key exists but hasn't been initialized yet
+        if ($this->storage->hasObject($key)) {
+            $this->storage->store($key, $this->storage->getDefinition($key)($this));
+            return $this->storage->getStored($key);
         }
-
-        // if the key is registered as a factory, return a new instance
-        if ($this->hasFactory($key)) {
-            return $this->map['factory'][$key]($this);
+        
+        if ($this->storage->hasFactory($key)) {
+            return $this->storage->getFactory($key);
         }
 
         // the key was not found
@@ -180,20 +145,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     public function remove(string $key)
     {
-        // if the key exists as a factory
-        if ($this->hasFactory($key)) {
-            unset($this->map['factory'][$key]);
-            return ! $this->hasFactory($key);
-        }
-
-        // if the key exists as an object
-        if ($this->hasObject($key)) {
-            unset($this->map['persistent'][$key], $this->store[$key]);
-            return ! $this->hasObject($key);
-        }
-
-        // the key did not exist
-        return false;
+        return $this->storage->remove($key);
     }
 
     /**
@@ -205,11 +157,11 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * For non-resolvable params such as strings etc, they can be set using $args.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string $class The class to resolve.
      * @param  array  $args  array of arguments to pass to resolved classes as [param name => value].
      * @return object        The resolved class
-     */ 
+     */
     public function resolve(string $class, array $args = [])
     {
         $reflectionClass = new \ReflectionClass($class);
@@ -254,30 +206,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
         $this->resetResolutions();
 
         // return the resolved class
-        return $reflectionClass->newInstanceArgs(
-            $resolutions
-        );
-    }
-
-    /**
-     * Performs some safety checks on a key when adding to the container.
-     *
-     * @since 1.0.0
-     *
-     * @throws Hodl\Exceptions\InvalidKeyException if the key if not a valid class name.
-     * @throws Hodl\Exceptions\KeyExistsException if the key already exists.
-     * 
-     * @param  string $key The key to check.
-     */
-    private function checkKey(string $key)
-    {
-        if (! class_exists($key)) {
-            throw new InvalidKeyException("Key [$key] was invalid. All keys must be valid class names");
-        }
-
-        if ($this->has($key)) {
-            throw new KeyExistsException("Key [$key] already exists within the container");
-        }
+        return $reflectionClass->newInstanceArgs($resolutions);
     }
 
     /**
@@ -294,7 +223,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * Searches for a class name in the container, and adds to resolutions if found.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string $className Key to search for.
      * @return bool              Whether the key was found.
      */
@@ -311,7 +240,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * Searches for $key in $args, and adds to resolutions if present.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  array  $args List of arguments passed to resolve
      * @param  string $key  The key to search for in $args.
      */

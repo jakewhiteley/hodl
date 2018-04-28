@@ -4,12 +4,12 @@ namespace Hodl\Tests\Classes;
 
 class Resolver
 {
-	public $var = 'foobar';
+    public $var = 'foobar';
 
-	public $nested = null;
+    public $nested = null;
 
-	public function __construct(Nested\Resolver $resolver)
-	{
-		$this->nested = $resolver;
-	}
+    public function __construct(Nested\Resolver $resolver)
+    {
+        $this->nested = $resolver;
+    }
 }

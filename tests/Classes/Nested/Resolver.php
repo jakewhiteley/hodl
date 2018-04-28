@@ -4,10 +4,9 @@ namespace Hodl\Tests\Classes\Nested;
 
 class Resolver
 {
-	public $var = 'nested';
+    public $var = 'nested';
 
-	public function __construct()
-	{
-
-	}
+    public function __construct()
+    {
+    }
 }
