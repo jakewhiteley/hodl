@@ -12,7 +12,7 @@ It's a simple `ArrayAccess` Service container which takes inspiration from both 
 
 ## Basic Usage
 
-A service can be added to the container as follows:
+A service can be added to the container by providing the class name, and a definition for the service.
 
 ```` php
 $hodl->add('Some\Namespace\Foo', function() {
@@ -20,21 +20,25 @@ $hodl->add('Some\Namespace\Foo', function() {
 });
 ````
 
-And then to get a service:
+You should always register a service using it's full class name. This is so that the autowiring can work and classes can have their dependencies injected with no fuss.
 
-```` php
-$foo = $hodl->get('Some\Namespace\Foo');
-````
+### Service definitions
 
-When adding a new class definition, the callable which returns the class is passed an instance of Hodl, which can be used for passing arguments derived from services already within the container:
+When adding a new class definition, the `callable` which returns the class is passed an instance of `Hodl`, which can be used for passing arguments derived from services already within the container:
 
 ```` php
 $hodl->get('Baz', function($hodl) {
 	return new Baz($hodl->get('Some\Namespace\Foo')->someProp);
 });
 ````
-**Note**
-You should always register a service using it's full class name. This is so that the autowiring can work and classes can have their dependencies injected with no fuss.
+
+## Retrieving a service
+
+As simple as it gets:
+
+```` php
+$foo = $hodl->get('Some\Namespace\Foo');
+````
 
 ## Checking if a service exists
 
