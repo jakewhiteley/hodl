@@ -118,7 +118,7 @@ $hodl->get('Foo\Bar')->prop // equals 'foobar'
 
 ## Autowiring (resolving dependencies)
 
-Aside as using it as a container for passing objects around, it can also be used to auotmatically resolve objects using the Reflection API.
+Aside as using it as a container for passing objects around, it can also be used to auotmatically resolve objects using the Reflection API and achieve Inversion of Control.
 
 Consider the following object:
 
@@ -135,16 +135,21 @@ class Foo
 ````
 
 When this object is created, it needs to be passed an instance of `Foo\Bar` as the first argument.
+
 Using the `resolve()` method this is super easy:
 
 ```` php
-$foo = $hodl->resolve('foo');
+$foo = $hodl->resolve('Foo\Foo');
 ````
 
-The object will be created an an instance of Foo\Bar will be initialized and passed through automatically. This works recursively so any dependencies of Bar will be magically resolved as well.
-This can of course be used when adding classes to the container so that they are already resolved when you call them.
+The object will be created an an instance of `Foo\Bar` will be initialized and passed through automatically. 
+
+This works recursively so any dependencies of `Foo\Bar` will be magically resolved as well.
+
+## Passing arguments
 
 The resolve method also accepts a second argument, which is an array of extra parameters you want to pass to the object constructors.
+
 The keys of this array must be the variable name of the parameter.
 
 ```` php
@@ -152,40 +157,49 @@ The keys of this array must be the variable name of the parameter.
 // function __construct( Bar $bar, int $someInt, string $someString = 'string' ) { ...
 
 // by not passing someString as a key, the default of 'string' will be used
-$foo = $hodl->resolve('foo', [
-	'someInt' => 42,
-	// 'someString' => 'Not passed'
+$foo = $hodl->resolve('Foo\Foo', [
+	'someInt' => 42
 ]);
+
+// Foo will recieve 42 as $someInt, but as we didn't specify $someString, the default of 'string' will be used
 ````
 
-This is all very well when you want the resolved object to use new instances, but what if you wanted to pass an object from the container itself? For that you can use the `using()` method, which indicates that a given class name should be loaded from a given container key instead of a new instance.
+## Resolving using services
 
-A good example would be passing a database connection wrapper:
+The above examples have an empty container, so all services are injected as new generic instances of that class. But if a service exists within the container, that service will be used instead - allowing your specific instance or a persistent object to be passed to any object which needs it.
 
-```` php
-/*
-class Needs_Db
+````php
+class Foo
 {
-	public function __construct( Some\Namespace\Database $connection, OtherClass $other ) {...}
+	public $var = 'foo';
 }
-*/
 
-// $connection will be passed as $hodl->get('db') while $other is passed as a new instance of OtherClass
-$ClassWhichNeedsDatabase = $hodl->using([
-	'Some\Namespace\Database' => 'db'
-])->resolve('Needs_Db');
+class Bar
+{
+	public $foo;
+	
+	public function __construct(Foo $foo)
+	{
+		$this->foo = $foo;
+	}
+}
+
+// Add Foo as a service
+$hodl->add('Foo', function() {
+	return new Foo();
+});
+
+$hodl['Foo']->var = 'changed!';
+
+
+$var = $hodl->resolve('Bar')->foo->var; // equals 'changed!'
 ````
 
-Don't be afraid to use `resolve()` when adding a class to the container either!
+Don't be afraid to use `resolve()` when adding a service definition to the container either!
 
 ```` php
-$hodl->add('foo', function($di) {
-	// Foo will be returned with bar taken from the container, and Other\Class as a new object with all dependencies resolved
-	// including an instance of \Database\Class from the container
-	return new Foo(
-		$di['bar'], 
-		$di->using([ 'Database\Class' => 'db_class_key' ])->resolve('Other\Class')
-	);
+$hodl->add('Bar', function($hodl) {
+	return $hodl->resolve('Bar'); // All of Bar's dependencies will be injected as soon as it is fetched
 });
 
 ````
