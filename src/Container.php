@@ -2,14 +2,18 @@
 namespace Hodl;
 
 use Psr\Container\ContainerInterface;
+use Hodl\Exceptions\ContainerException;
+use Hodl\Exceptions\InvalidKeyException;
+use Hodl\Exceptions\NotFoundException;
+use Hodl\Exceptions\KeyExistsException;
 
 /**
  * A simple DI container
  */
-class Container implements \ArrayAccess, ContainerInterface
+class Container extends ContainerArrayAccess implements ContainerInterface
 {
     /**
-     * Stores a map of the registered keys and their closures
+     * Stores a map of the registered keys and their closures.
      * @var array
      */
     private $map = [
@@ -18,16 +22,24 @@ class Container implements \ArrayAccess, ContainerInterface
     ];
 
     /**
-     * Stores initialised objects
+     * Stores initialized objects.
      * @var array
      */
     private $store = [];
 
-    public $resolutionMap = [];
+    /**
+     * Stores current resolution stack.
+     * @var array
+     */
+    private $resolutions = [];
+
 
     /**
      * Add a class.
-     * This class is initialised when first retrieved via get(), and is persistent unless explicitly destroyed
+     * 
+     * This class is initialized when first retrieved via get(), and is persistent unless explicitly destroyed.
+     *
+     * @since 1.0.0
      *
      * @param string   $key     The key to store the object under
      * @param callable $closure A closure which returns a new instance of the desired object
@@ -35,68 +47,110 @@ class Container implements \ArrayAccess, ContainerInterface
      */
     public function add(string $key, callable $closure)
     {
+        $this->checkKey($key);
         $this->map['persistent'][$key] = $closure;
     }
 
     /**
      * Add a factory class.
-     * Classes added via this method will return as a new instance when retrieved
+     * 
+     * Classes added via this method will return as a new instance when retrieved.
      *
-     * @param string   $key     The key to store the object under
+     * @since 1.0.0
+     *
+     * @param string   $key     The key to store the object under.
      * @param callable $closure A closure which returns a new instance of the desired object
      *                          A reference to this DIContainer is passed as a param to the closure
      */
     public function addFactory(string $key, callable $closure)
     {
+        $this->checkKey($key);
         $this->map['factory'][$key] = $closure;
     }
 
     /**
-     * Check if a given key exists within this container, either as an object or a factory
+     * Add a specific object instance to the container.
      *
-     * @param  string  $key The key to check for
-     * @return boolean      If the key exists
+     * @since 1.0.0
+     * 
+     * @param string|object $key    The key to add the instance as. Can be omitted.
+     *                              If an object is passed and the key is omitted, the namespaced class name
+     *                              will be used instead.
+     * @param object        $object The object instance to add.
      */
-    public function has($key)
+    public function addInstance($key, $object = null)
+    {
+        if (is_object($key)) {
+            $name = get_class($key);
+            $this->map['persistent'][$name] = true;
+            $this->store[$name] = $key;
+            return $this;
+        } elseif (is_object($object)) {
+            $this->checkKey($key);
+            $this->map['persistent'][$key] = true;
+            $this->store[$key] = $object;
+        } else {
+            throw new ContainerException('An object instance must be passed');
+        }
+    }
+
+    /**
+     * Check if a given key exists within this container, either as an object or a factory.
+     *
+     * @since 1.0.0
+     *
+     * @param  string  $key The key to check for.
+     * @return boolean      If the key exists.
+     */
+    public function has(string $key)
     {
         return $this->hasObject($key) || $this->hasFactory($key);
     }
 
     /**
-     * Check if a given key exists as an object within this container
+     * Check if a given key exists as an object within this container.
      *
-     * @param  string  $key The key to check for
-     * @return boolean      If the key exists
+     * @since 1.0.0
+     *
+     * @param  string  $key The key to check for.
+     * @return boolean      If the key exists.
      */
-    public function hasObject($key)
+    public function hasObject(string $key)
     {
         return isset($this->map['persistent'][$key]);
     }
 
     /**
-     * Check if a given key exists as a factory class within this container
+     * Check if a given key exists as a factory class within this container.
      *
-     * @param  string  $key The key to check for
-     * @return boolean      If the key exists
+     * @since 1.0.0
+     *
+     * @param  string  $key The key to check for.
+     * @return boolean      If the key exists.
      */
-    public function hasFactory($key)
+    public function hasFactory(string $key)
     {
         return isset($this->map['factory'][$key]);
     }
 
     /**
-     * Retreieves an object for a given key
+     * Retrieves an object for a given key.
      *
-     * @param  string $key  The key to lookup
-     * @return object|bool  The requested object. False if not present
+     * @since 1.0.0
+     *
+     * @throws Hodl\Exceptions\ContainerException if the $key is not a valid string.
+     * @throws Hodl\Exceptions\NotFoundException  if the $key was not present.
+     * 
+     * @param  string $key  The key to lookup.
+     * @return object|bool  The requested object.
      */
-    public function get($key)
+    public function get(string $key)
     {
         if (! is_string($key) || empty($key)) {
-            throw new Exceptions\ContainerException('$key must be a string');
+            throw new ContainerException('$key must be a string');
         }
 
-        // if this class has already been initialised
+        // if this class has already been initialized
         if (isset($this->store[$key])) {
             return $this->store[$key];
         }
@@ -113,10 +167,50 @@ class Container implements \ArrayAccess, ContainerInterface
         }
 
         // the key was not found
-        throw new Exceptions\NotFoundException("The key [$key] could not be found");
+        throw new NotFoundException("The key [$key] could not be found");
     }
 
-    public function resolve($class, $args = [])
+    /**
+     * Unset a given key, and removes any objects associated with it from the container.
+     *
+     * @since 1.0.0
+     *
+     * @param  string $key The key to remove.
+     * @return bool        Whether the key and associated object were removed.
+     */
+    public function remove(string $key)
+    {
+        // if the key exists as a factory
+        if ($this->hasFactory($key)) {
+            unset($this->map['factory'][$key]);
+            return ! $this->hasFactory($key);
+        }
+
+        // if the key exists as an object
+        if ($this->hasObject($key)) {
+            unset($this->map['persistent'][$key], $this->store[$key]);
+            return ! $this->hasObject($key);
+        }
+
+        // the key did not exist
+        return false;
+    }
+
+    /**
+     * Recursively resolve a given class name via DI.
+     *
+     * If a key exists within the container it will be injected, otherwise a new instance of the
+     * dependency will be injected.
+     *
+     * For non-resolvable params such as strings etc, they can be set using $args.
+     *
+     * @since 1.0.0
+     * 
+     * @param  string $class The class to resolve.
+     * @param  array  $args  array of arguments to pass to resolved classes as [param name => value].
+     * @return object        The resolved class
+     */ 
+    public function resolve(string $class, array $args = [])
     {
         $reflectionClass = new \ReflectionClass($class);
 
@@ -136,124 +230,95 @@ class Container implements \ArrayAccess, ContainerInterface
             return new $class;
         }
 
-        $newInstanceParams = [];
-
         foreach ($params as $param) {
+            $class = $param->getClass();
+
             // if the param is not a class, check $args for the value
-            if (is_null($param->getClass())) {
-                if (isset($args[$param->name])) {
-                    $newInstanceParams[] = $args[$param->name];
-                }
+            if (is_null($class)) {
+                $this->resolveParam($args, $param->name);
                 continue;
             }
 
-            // if the class has been mapped to a DI instance
-            if (isset($this->resolutionMap[$param->getClass()->getName()])) {
-                $newInstanceParams[] = $this->get(
-                    $this->resolutionMap[$param->getClass()->getName()]
-                );
+            $className = $class->getName();
+
+            // if the class exists in the container, inject it
+            if ($this->resolveFromContainer($className)) {
                 continue;
             }
 
             // else the param is a class, so run $this->resolve on it
-            $newInstanceParams[] = $this->resolve(
-                $param->getClass()->getName(),
-                $args
-            );
+            $this->resolutions[] = $this->resolve($className, $args);
         }
 
-        // reset the resolution map created via $this->using() for next resolution
-        $this->resolutionMap = [];
+        $resolutions = $this->resolutions;
+        $this->resetResolutions();
 
         // return the resolved class
         return $reflectionClass->newInstanceArgs(
-            $newInstanceParams
+            $resolutions
         );
     }
 
     /**
-     * When using resolve, this method indicates a dependency should come from this DI container,
-     * instead of a new instance
+     * Performs some safety checks on a key when adding to the container.
      *
-     * Example:
-     *      ->using(['Jaws\Foo' => 'bar'])->resolve('FooBar')
-     *      The resolved FooBar object will use {DI Container}->get('bar') to resolve any instances of Jaws\Foo,
-     *      but any other dependency classes will be passed as new instances
+     * @since 1.0.0
      *
-     * @param  string $namespaceMap An array of {global namespace of class} => {DI key to fetch}
-     * @return self
+     * @throws Hodl\Exceptions\InvalidKeyException if the key if not a valid class name.
+     * @throws Hodl\Exceptions\KeyExistsException if the key already exists.
+     * 
+     * @param  string $key The key to check.
      */
-    public function using($namespaceMap)
+    private function checkKey(string $key)
     {
-        $this->resolutionMap = $namespaceMap;
-        return $this;
+        if (! class_exists($key)) {
+            throw new InvalidKeyException("Key [$key] was invalid. All keys must be valid class names");
+        }
+
+        if ($this->has($key)) {
+            throw new KeyExistsException("Key [$key] already exists within the container");
+        }
     }
 
     /**
-     * Unsets a given key, and removes any objects associated with it from the container
+     * Resets the resolutions stack.
      *
-     * @param  string $key The key to remove
-     * @return bool        Whether the key and associated object were removed
+     * @since 1.0.0
      */
-    public function remove($key)
+    private function resetResolutions()
     {
-        // if the key exists as a factory
-        if ($this->hasFactory($key)) {
-            unset($this->map['factory'][$key]);
-            return ! $this->hasFactory($key);
-        }
+        $this->resolutions = [];
+    }
 
-        // if the key exists as an object
-        if ($this->hasObject($key)) {
-            unset($this->map['persistent'][$key], $this->store[$key]);
-            return ! $this->hasObject($key);
+    /**
+     * Searches for a class name in the container, and adds to resolutions if found.
+     *
+     * @since 1.0.0
+     * 
+     * @param  string $className Key to search for.
+     * @return bool              Whether the key was found.
+     */
+    private function resolveFromContainer(string $className)
+    {
+        if ($this->has($className)) {
+            $this->resolutions[] = $this->get($className);
+            return true;
         }
-
-        // the key did not exist
         return false;
     }
 
     /**
-     * Sets the value at specified offset
+     * Searches for $key in $args, and adds to resolutions if present.
      *
-     * @param  string  $offset The key to set
-     * @param  closure $value  The value to set
+     * @since 1.0.0
+     * 
+     * @param  array  $args List of arguments passed to resolve
+     * @param  string $key  The key to search for in $args.
      */
-    public function offsetSet($offset, $value)
+    private function resolveParam(array $args, string $key)
     {
-        $this->add($offset, $value);
-    }
-
-    /**
-     * Checks if a given offset exists
-     *
-     * @param  string  $offset The key to set
-     * @return  bool
-     */
-    public function offsetExists($offset)
-    {
-        return $this->has($offset);
-    }
-
-    /**
-     * Gets the value at specified offset.
-     *
-     * @param  string  $offset The key to get
-     * @return  object|closure  $value  The object instance or closure if a factory class
-     */
-    public function offsetGet($offset)
-    {
-        return $this->get($offset);
-    }
-
-    /**
-     * Unsets the value at specified offset.
-     *
-     * @param  string  $offset The key to set
-     * @return  bool
-     */
-    public function offsetUnset($offset)
-    {
-        return $this->remove($offset);
+        if (isset($args[$key])) {
+            $this->resolutions[] = $args[$key];
+        }
     }
 }

@@ -5,6 +5,6 @@ namespace Hodl\Exceptions;
 use Exception;
 use Psr\Container\NotFoundExceptionInterface;
 
-class NotFoundException extends ContainerException implements NotFoundExceptionInterface
+class KeyExistsException extends ContainerException implements NotFoundExceptionInterface
 {
 }

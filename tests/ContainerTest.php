@@ -5,6 +5,8 @@ namespace Hodl\Tests;
 use Hodl\Container;
 use Hodl\Exceptions\ContainerException;
 use Hodl\Exceptions\NotFoundException;
+use Hodl\Exceptions\KeyExistsException;
+use Hodl\Exceptions\InvalidKeyException;
 use Hodl\Tests\Classes\DummyClass;
 use Hodl\Tests\Classes\NoConstructor;
 use Hodl\Tests\Classes\NeedsResolving;
@@ -32,6 +34,19 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $hodl->get(12);
     }    
 
+    /**
+     * @test
+     */
+    public function keys_must_be_valid_namespaces()
+    {
+        $this->expectException(InvalidKeyException::class);
+
+        $hodl = new Container();
+        $hodl = $hodl->add('alias', function() {
+            return new DummyClass('bar');
+        });
+    }
+
     /** 
      * @test
      * @return Hodl\Container An instance of Container containing a DummyClass instance.
@@ -40,13 +55,13 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl->add(DummyClass::class, function() {
+        $hodl->add('Hodl\Tests\Classes\DummyClass', function() {
         	return new DummyClass('bar');
         });
 
-        $this->assertTrue($hodl->has(DummyClass::class));
-        $this->assertFalse($hodl->hasFactory(DummyClass::class));
-        $this->assertTrue($hodl->hasObject(DummyClass::class));
+        $this->assertTrue($hodl->has('Hodl\Tests\Classes\DummyClass'));
+        $this->assertFalse($hodl->hasFactory('Hodl\Tests\Classes\DummyClass'));
+        $this->assertTrue($hodl->hasObject('Hodl\Tests\Classes\DummyClass'));
 
         return $hodl;
     }
@@ -58,8 +73,8 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
      */
     public function get_returns_the_same_class_instance_every_time(Container $hodl)
     {
-    	$firstAttempt = $hodl->get(DummyClass::class);
-    	$secondAttempt = $hodl->get(DummyClass::class);
+    	$firstAttempt = $hodl->get('Hodl\Tests\Classes\DummyClass');
+    	$secondAttempt = $hodl->get('Hodl\Tests\Classes\DummyClass');
 
     	$this->assertSame($firstAttempt, $secondAttempt);
         $this->assertSame($firstAttempt->foo, $secondAttempt->foo);
@@ -74,12 +89,31 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
      */
     public function get_throws_NotFoundException_when_key_not_present(Container $hodl)
     {
-        $hodl->remove(DummyClass::class);
+        $hodl->remove('Hodl\Tests\Classes\DummyClass');
 
     	$this->expectException(NotFoundException::class);
 
-    	$hodl->get(DummyClass::class);
+    	$hodl->get('Hodl\Tests\Classes\DummyClass');
     }
+
+    /**
+     * @test
+     */
+    public function keys_cannot_be_overloaded()
+    {
+        $hodl = new Container();
+
+        $this->expectException(KeyExistsException::class);
+
+        $hodl->add('Hodl\Tests\Classes\DummyClass', function() {
+            return new DummyClass('bar');
+        });
+
+        $hodl->add('Hodl\Tests\Classes\DummyClass', function() {
+            return new DummyClass('bar');
+        });
+    }
+
 
      /** 
      * @test
@@ -89,13 +123,13 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl->addFactory(DummyClass::class, function() {
+        $hodl->addFactory('Hodl\Tests\Classes\DummyClass', function() {
             return new DummyClass('foo');
         });
 
-        $this->assertTrue($hodl->has(DummyClass::class));
-        $this->assertTrue($hodl->hasFactory(DummyClass::class));
-        $this->assertFalse($hodl->hasObject(DummyClass::class));
+        $this->assertTrue($hodl->has('Hodl\Tests\Classes\DummyClass'));
+        $this->assertTrue($hodl->hasFactory('Hodl\Tests\Classes\DummyClass'));
+        $this->assertFalse($hodl->hasObject('Hodl\Tests\Classes\DummyClass'));
 
         return $hodl;
     }
@@ -107,8 +141,8 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
      */
     public function get_returns_a_different_factory_instance_every_time(Container $hodl)
     {
-        $firstAttempt = $hodl->get(DummyClass::class);
-        $secondAttempt = $hodl->get(DummyClass::class);
+        $firstAttempt = $hodl->get('Hodl\Tests\Classes\DummyClass');
+        $secondAttempt = $hodl->get('Hodl\Tests\Classes\DummyClass');
 
         $this->assertSame($firstAttempt->foo, $secondAttempt->foo);
         $this->assertNotEquals($firstAttempt->bar, $secondAttempt->bar);
@@ -122,9 +156,9 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
      */
     public function a_factory_can_be_removed(Container $hodl)
     {
-        $this->assertTrue($hodl->remove(DummyClass::class));
-        $this->assertFalse($hodl->has(DummyClass::class));
-        $this->assertFalse($hodl->remove(DummyClass::class));
+        $this->assertTrue($hodl->remove('Hodl\Tests\Classes\DummyClass'));
+        $this->assertFalse($hodl->has('Hodl\Tests\Classes\DummyClass'));
+        $this->assertFalse($hodl->remove('Hodl\Tests\Classes\DummyClass'));
 
         return $hodl;
     }
@@ -136,14 +170,14 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl['key'] = function() {
+        $hodl['Hodl\Tests\Classes\DummyClass'] = function() {
             return new DummyClass('foo');
         };
 
-        $this->assertTrue(isset($hodl['key']));
-        $this->assertTrue($hodl['key'] instanceof DummyClass);
-        unset($hodl['key']);
-        $this->assertFalse(isset($hodl['key']));
+        $this->assertTrue(isset($hodl['Hodl\Tests\Classes\DummyClass']));
+        $this->assertTrue($hodl['Hodl\Tests\Classes\DummyClass'] instanceof DummyClass);
+        unset($hodl['Hodl\Tests\Classes\DummyClass']);
+        $this->assertFalse(isset($hodl['Hodl\Tests\Classes\DummyClass']));
     }
 
     /**
@@ -158,7 +192,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('foobar', $resolved->resolver->var);
         $this->assertEquals('nested', $resolved->resolver->nested->var);
 
-        $doesntNeedResolving = $hodl->resolve(DummyClass::class);
+        $doesntNeedResolving = $hodl->resolve('Hodl\Tests\Classes\DummyClass');
 
         $this->assertEquals('not_set', $doesntNeedResolving->foo);
 
@@ -167,15 +201,72 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $this->assertInstanceOf(NoConstructor::class, $hasNoConstructor);
     }
 
-        /**
+    /**
      * @test
      */
     public function an_object_can_be_resolved_explicitly_with_params()
     {
         $hodl = new Container();
 
-        $doesntNeedResolving = $hodl->resolve(DummyClass::class, ['string' => 'has_been_set']);
+        $doesntNeedResolving = $hodl->resolve('Hodl\Tests\Classes\DummyClass', ['string' => 'has_been_set']);
 
         $this->assertEquals('has_been_set', $doesntNeedResolving->foo);
+    }
+
+    /**
+     * @test
+     */
+    public function a_specific_instance_can_be_added_to_the_container()
+    {
+        $hodl = new Container();
+
+        $instance = new DummyClass('specific');
+
+        $hodl->addInstance('Hodl\Tests\Classes\DummyClass', $instance);
+
+        $this->assertTrue($hodl->has('Hodl\Tests\Classes\DummyClass'));
+        $this->assertEquals($hodl->get('Hodl\Tests\Classes\DummyClass')->foo, 'specific');
+
+        $hodl->remove('Hodl\Tests\Classes\DummyClass');
+        $this->assertFalse($hodl->has('Hodl\Tests\Classes\DummyClass'));
+
+        $hodl->addInstance($instance);
+
+        $this->assertTrue($hodl->has('Hodl\Tests\Classes\DummyClass'));
+        $this->assertEquals($hodl->get('Hodl\Tests\Classes\DummyClass')->foo, 'specific');
+
+        $this->expectException(ContainerException::class);
+
+        $hodl->addInstance('key');
+    }
+
+    /**
+     * @test
+     */
+    public function objects_in_the_container_take_precedence_when_resolving()
+    {
+        $hodl = new Container();
+
+        $hodl->add('Hodl\Tests\Classes\NeedsResolving', function($di) {
+            return $di->Resolve('Hodl\Tests\Classes\NeedsResolving');
+        });
+
+        // was resolved using global scope classes
+        $this->assertEquals('foobar', $hodl->get('Hodl\Tests\Classes\NeedsResolving')->resolver->var);
+
+        $hodl->remove('Hodl\Tests\Classes\NeedsResolving');
+
+        $hodl->add('Hodl\Tests\Classes\NeedsResolving', function($di) {
+            return $di->Resolve('Hodl\Tests\Classes\NeedsResolving');
+        });
+
+        $hodl->add('Hodl\Tests\Classes\Resolver', function($di) {
+            return $di->Resolve('Hodl\Tests\Classes\Resolver');
+        });
+
+        $hodl->get('Hodl\Tests\Classes\Resolver')->var = 'resolved';
+
+        // was resolved using global scope classes
+        $this->assertEquals('resolved', $hodl->get('Hodl\Tests\Classes\NeedsResolving')->resolver->var);
     }
 }
