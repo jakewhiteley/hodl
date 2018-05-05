@@ -1,6 +1,8 @@
 <?php
 namespace Hodl;
 
+use ReflectionClass;
+use ReflectionParameter;
 use Psr\Container\ContainerInterface;
 use Hodl\Exceptions\ContainerException;
 use Hodl\Exceptions\NotFoundException;
@@ -164,7 +166,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     public function resolve(string $class, array $args = [])
     {
-        $reflectionClass = new \ReflectionClass($class);
+        $reflectionClass = new ReflectionClass($class);
 
         // get the constructor method of the current class
         $constructor = $reflectionClass->getConstructor();
@@ -187,9 +189,10 @@ class Container extends ContainerArrayAccess implements ContainerInterface
 
             // if the param is not a class, check $args for the value
             if (is_null($class)) {
-                $this->resolveParam($args, $param->name);
+                $this->resolveParam($args, $param);
                 continue;
             }
+
 
             $className = $class->getName();
 
@@ -239,15 +242,22 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     /**
      * Searches for $key in $args, and adds to resolutions if present.
      *
+     * @since 1.0.1 Updated to resolve params with default values as a fallback.
      * @since 1.0.0
      *
-     * @param  array  $args List of arguments passed to resolve
-     * @param  string $key  The key to search for in $args.
+     * @param  array               $args List of arguments passed to resolve.
+     * @param  ReflectionParameter $key  The current parameter reflection class.
      */
-    private function resolveParam(array $args, string $key)
+    private function resolveParam(array $args, ReflectionParameter $param)
     {
-        if (isset($args[$key])) {
-            $this->resolutions[] = $args[$key];
+        $name = $param->name;
+
+        if (isset($args[$name])) {
+            $this->resolutions[] = $args[$name];
+            return;
+        }
+        if ($param->isDefaultValueAvailable()) {
+            $this->resolutions[] = $param->getDefaultValue();
         }
     }
 }
