@@ -2,6 +2,7 @@
 namespace Hodl;
 
 use ReflectionClass;
+use ReflectionMethod;
 use ReflectionParameter;
 use Psr\Container\ContainerInterface;
 use Hodl\Exceptions\ContainerException;
@@ -193,7 +194,6 @@ class Container extends ContainerArrayAccess implements ContainerInterface
                 continue;
             }
 
-
             $className = $class->getName();
 
             // if the class exists in the container, inject it
@@ -210,6 +210,61 @@ class Container extends ContainerArrayAccess implements ContainerInterface
 
         // return the resolved class
         return $reflectionClass->newInstanceArgs($resolutions);
+    }
+
+
+    public function resolveMethod($class, string $method, array $args = [])
+    {
+        if (! is_callable([$class, $method])) {
+            throw new ContainerException("$class::$method does not exist or is not callable so could not be resolved");
+        }
+
+        $reflectionMethod = new ReflectionMethod($class, $method);
+        
+        if (is_string($class)) {
+            $classInstance = new $class();
+        } else {
+            $classInstance = $class;
+        }
+
+        // get method params
+        $params = $reflectionMethod->getParameters();
+
+        // If there is a constructor, but no params
+        if (count($params) === 0) {
+            // as we are dealing with a static method
+            if ($reflectionMethod->isStatic() === true ) {
+                return $reflectionMethod->invoke(null);
+            } else {
+                return $reflectionMethod->invoke($classInstance);
+            }
+        }
+
+        foreach ($params as $param) {
+            $class = $param->getClass();
+
+            // if the param is not a class, check $args for the value
+            if (is_null($class)) {
+                $this->resolveParam($args, $param);
+                continue;
+            }
+
+            $className = $class->getName();
+
+            // if the class exists in the container, inject it
+            if ($this->resolveFromContainer($className)) {
+                continue;
+            }
+
+            // else the param is a class, so run $this->resolve on it
+            $this->resolutions[] = $this->resolve($className, $args);
+        }
+
+        $resolutions = $this->resolutions;
+        $this->resetResolutions();
+
+        // return the resolved class
+        return $reflectionMethod->invokeArgs($classInstance, $resolutions);
     }
 
     /**
