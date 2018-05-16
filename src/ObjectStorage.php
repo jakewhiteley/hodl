@@ -30,7 +30,7 @@ class ObjectStorage
      * Add an object definition.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string   $key     Object key.
      * @param  callable $closure Definition for this object.
      */
@@ -46,7 +46,7 @@ class ObjectStorage
      * Like an object, but a new instance is returned when accessed.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string   $key     Factory key.
      * @param  callable $closure Definition for this factory.
      */
@@ -60,7 +60,7 @@ class ObjectStorage
      * Add an instance definition.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string   $key    Instance key.
      * @param  object   $object Definition for this instance.
      */
@@ -75,7 +75,7 @@ class ObjectStorage
      * Boots up an object and stores.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string   $key    Object key.
      * @param  object   $object Definition for this instance.
      */
@@ -88,9 +88,9 @@ class ObjectStorage
      * Checks if the given key has an object definition.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string  $key Object key.
-     * @return boolean      
+     * @return boolean
      */
     public function hasObject(string $key)
     {
@@ -101,9 +101,9 @@ class ObjectStorage
      * Checks if the given key has a factory definition.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string  $key Object key.
-     * @return boolean      
+     * @return boolean
      */
     public function hasFactory(string $key)
     {
@@ -114,9 +114,9 @@ class ObjectStorage
      * Checks if the given key has already been booted and stored.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string  $key Object key.
-     * @return boolean      
+     * @return boolean
      */
     public function hasStored(string $key)
     {
@@ -127,9 +127,9 @@ class ObjectStorage
      * Returns a raw object definition.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string  $key Object key.
-     * @return callable      
+     * @return callable
      */
     public function getDefinition($key)
     {
@@ -140,9 +140,9 @@ class ObjectStorage
      * Returns a stored object.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string  $key Object key.
-     * @return object      
+     * @return object
      */
     public function getStored(string $key)
     {
@@ -153,9 +153,9 @@ class ObjectStorage
      * Returns a booted factory definition.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string  $key Object key.
-     * @return object      
+     * @return object
      */
     public function getFactory(string $key)
     {
@@ -166,7 +166,7 @@ class ObjectStorage
      * Removes a given key and all data from the storage.
      *
      * @since 1.0.0
-     * 
+     *
      * @param  string $key Key to remove.
      * @return bool
      */
@@ -200,7 +200,7 @@ class ObjectStorage
      */
     protected function checkKey(string $key)
     {
-        if (! class_exists($key)) {
+        if (! \class_exists($key)) {
             throw new InvalidKeyException("Key [$key] was invalid. All keys must be valid class names");
         }
 

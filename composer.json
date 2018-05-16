@@ -32,14 +32,16 @@
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "~3.0",
-        "phpunit/phpunit": "~7.0" 
+        "phpunit/phpunit": "~7.0",
+        "friendsofphp/php-cs-fixer": "^2.11"
     },
     "scripts": {
         "sniff": [
-            "phpcs --ignore=vendor --extensions=php --standard=PSR2 ."
+          "phpcs --extensions=php ."
         ],
         "fix": [
-            "phpcbf --ignore=vendor --extensions=php --standard=PSR2 ."
+          "php-cs-fixer fix",
+          "phpcbf --extensions=php ."
         ],
         "test": [
             "phpunit --coverage-text"

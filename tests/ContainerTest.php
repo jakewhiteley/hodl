@@ -10,6 +10,7 @@ use Hodl\Exceptions\InvalidKeyException;
 use Hodl\Tests\Classes\DummyClass;
 use Hodl\Tests\Classes\NoConstructor;
 use Hodl\Tests\Classes\NeedsResolving;
+use Hodl\Tests\Classes\Resolver;
 
 class ContainerTest extends \PHPUnit\Framework\TestCase
 {
@@ -239,6 +240,17 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
+    public function trying_to_resolve_a_nonexistent_class_throws_an_exception()
+    {
+        $hodl = new Container();
+        $this->expectException(ContainerException::class);
+
+        $hodl->resolve('imaginaryClass');
+    }
+
+    /**
+     * @test
+     */
     public function objects_in_the_container_take_precedence_when_resolving()
     {
         $hodl = new Container();
@@ -265,4 +277,95 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         // was resolved using global scope classes
         $this->assertEquals('resolved', $hodl->get('Hodl\Tests\Classes\NeedsResolving')->resolver->var);
     }
+
+    /**
+     * @test
+     */
+    public function a_method_can_be_resolved_explicitly()
+    {
+        $hodl = new Container();
+
+        $shouldBeResolver = $hodl->resolveMethod(DummyClass::class, 'hasNoStaticParams');
+
+        $this->assertInstanceOf(Resolver::class, $shouldBeResolver);
+
+        // Assert that the resolution was recursive.
+        $this->assertInstanceOf(\Hodl\Tests\Classes\Nested\Resolver::class, $shouldBeResolver->nested);
+
+        $this->expectException(ContainerException::class);
+        // Check if an exception thrown is the class doesnt exist.
+        $hodl->resolveMethod('DoesntExist', 'hasNoStaticParams');
+
+        $this->expectException(ContainerException::class);
+        // Check if an exception thrown is the class method exist.
+        $hodl->resolveMethod(DummyClass::class, 'DoesntExist');
+    }
+
+    /**
+     * @test
+     */
+    public function a_method_can_be_resolved_for_as_existing_instances()
+    {
+        $hodl = new Container();
+
+        $instance = new DummyClass();
+
+        $shouldBeResolver = $hodl->resolveMethod($instance, 'hasNoStaticParams');
+
+        $this->assertInstanceOf(Resolver::class, $shouldBeResolver);
+        $this->assertInstanceOf(\Hodl\Tests\Classes\Nested\Resolver::class, $shouldBeResolver->nested);
+
+        $shouldBeResolver = $hodl->resolveMethod($instance, 'isStatic');
+
+        $this->assertInstanceOf(Resolver::class, $shouldBeResolver);
+        $this->assertInstanceOf(\Hodl\Tests\Classes\Nested\Resolver::class, $shouldBeResolver->nested);
+    }
+
+    /**
+     * @test
+     */
+    public function a_method_can_be_resolved_with_no_args()
+    {
+        $hodl = new Container();
+
+        $instance = new DummyClass();
+
+        $this->assertTrue($hodl->resolveMethod(DummyClass::class, 'hasNoParams'));
+
+        $this->assertTrue($hodl->resolveMethod($instance, 'staticHasNoParams'));
+    }
+
+    /**
+     * @test
+     */
+    public function objects_in_the_container_take_precedence_when_resolving_methods()
+    {
+        $hodl = new Container();
+
+        $hodl->add(Resolver::class, function ($di) {
+            return $di->resolve(Resolver::class);
+        });
+
+        $hodl->get(Resolver::class)->var = 'resolved';
+
+        $shouldBeResolved = $hodl->resolveMethod(DummyClass::class, 'hasNoStaticParams');
+
+        $this->assertEquals('resolved', $shouldBeResolved->var);
+    }
+
+    /**
+     * @test
+     */
+    public function methods_can_be_resolved_with_args()
+    {
+        $hodl = new Container();
+
+        $shouldBeResolved = $hodl->resolveMethod(DummyClass::class, 'hasParams', [
+            'param' => 'not null'
+        ]);
+
+       $this->assertEquals('not null', $shouldBeResolved);
+
+    }
+
 }
