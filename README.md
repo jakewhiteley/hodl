@@ -199,3 +199,44 @@ $hodl->add('Bar', function($hodl) {
 });
 
 ````
+
+## Resolving methods
+The `resolveMethod($class, $methodName, $args)` method allows autowiring of class members the same way that `resolve()` works on classes.
+
+````php
+$hodl->resolveMethod(Foo::class, 'someMethod');
+````
+
+`resolveMethod` will call the supplied method, recursively inject dependencies and allow you to pass extra non-object parameters as per the `resolve` examples above. This works on static methods as well as public ones.
+
+The exmample above shows `someMethod` being execcuted and returned on a new instance of `Foo`, but you can also pass a specific instance instead of the class name:
+
+````php
+$foo = new Foo();
+$return = $hodl->resolveMethod($foo, 'someMethod', ['amount_of_awesome' => 100]);
+````
+
+Both `resolve` and `resolveMethod` can be used together to create a new fully resolved object and execute a method without having to create a single new object.
+
+````php
+class Bar
+{
+	public $foo;
+	
+	public function __construct(Foo $foo)
+	{
+		$this->foo = $foo;
+	}
+	
+	public function methodName(Foo\Baz $baz)
+	{
+		return $this->foo->var * $baz->var;
+	}
+}
+
+// Fully resolves methodName and returns an instance of Foo\Baz
+$resolvedBaz = $hodl->resolveMethod(
+	$hodl->resolve('Bar'),
+	'methodName'
+);
+````
