@@ -12,7 +12,7 @@ class DummyClass
     public function __construct($string = 'not_set')
     {
         $this->foo = $string;
-        $this->bar = random_bytes(5);
+        $this->bar = \random_bytes(5);
     }
 
     public function hasNoStaticParams(Resolver $resolver)

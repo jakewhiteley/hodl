@@ -83,9 +83,9 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     public function addInstance($key, $object = null)
     {
-        if (is_object($key)) {
-            $this->storage->instance(get_class($key), $key);
-        } elseif (is_object($object)) {
+        if (\is_object($key)) {
+            $this->storage->instance(\get_class($key), $key);
+        } elseif (\is_object($object)) {
             $this->storage->instance($key, $object);
         } else {
             throw new ContainerException('An object instance must be passed');
@@ -118,7 +118,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     public function get($key)
     {
-        if (! is_string($key) || empty($key)) {
+        if (! \is_string($key) || empty($key)) {
             throw new ContainerException('$key must be a string');
         }
 
@@ -189,7 +189,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
         $params = $constructor->getParameters();
 
         // If there is a constructor, but no params
-        if (count($params) === 0) {
+        if (\count($params) === 0) {
             return new $class;
         }
 
@@ -220,7 +220,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     public function resolveMethod($class, string $method, array $args = [])
     {
-        if (! is_callable([$class, $method])) {
+        if (! \is_callable([$class, $method])) {
             throw new ContainerException("$class::$method does not exist or is not callable so could not be resolved");
         }
 
@@ -228,7 +228,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
 
         if ($reflectionMethod->isStatic()) {
             $classInstance = null;
-        } elseif (is_string($class)) {
+        } elseif (\is_string($class)) {
             $classInstance = new $class();
         } else {
             $classInstance = $class;
@@ -238,9 +238,9 @@ class Container extends ContainerArrayAccess implements ContainerInterface
         $params = $reflectionMethod->getParameters();
 
         // If there is a constructor, but no params
-        if (count($params) === 0) {
+        if (\count($params) === 0) {
             // as we are dealing with a static method
-            if ($reflectionMethod->isStatic() === true ) {
+            if ($reflectionMethod->isStatic() === true) {
                 return $reflectionMethod->invoke(null);
             } else {
                 return $reflectionMethod->invoke($classInstance);
@@ -301,7 +301,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
             $class = $param->getClass();
 
             // if the param is not a class, check $args for the value
-            if (is_null($class)) {
+            if (\is_null($class)) {
                 $this->resolveParam($args, $param);
                 continue;
             }
