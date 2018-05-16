@@ -209,14 +209,16 @@ $hodl->resolveMethod(Foo::class, 'someMethod');
 
 `resolveMethod` will call the supplied method, recursively inject dependencies and allow you to pass extra non-object parameters as per the `resolve` examples above. This works on static methods as well as public ones.
 
-The exmample above shows `someMethod` being execcuted and returned on a new instance of `Foo`, but you can also pass a specific instance instead of the class name:
+### Resolving instance methods
+
+The example above shows `someMethod` being execcuted and returned on a new instance of `Foo`, but you can also pass a specific instance instead of the class name:
 
 ````php
 $foo = new Foo();
 $return = $hodl->resolveMethod($foo, 'someMethod', ['amount_of_awesome' => 100]);
 ````
 
-Both `resolve` and `resolveMethod` can be used together to create a new fully resolved object and execute a method without having to create a single new object.
+Both `resolve` and `resolveMethod` could therefore be used together to create a new fully resolved object and execute a method.
 
 ````php
 class Bar
@@ -240,3 +242,11 @@ $resolvedBaz = $hodl->resolveMethod(
 	'methodName'
 );
 ````
+
+## Conclusion
+
+By adding services to Hodl, your code can achieve complete inversion of control and manage classes application-wide with no need for a single `new` keyword or singleton in sight.
+
+## Contributing
+
+If you have any improvements, bugs, or feature requests; feel free to open up an issue or PR.
