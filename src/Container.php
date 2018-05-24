@@ -133,7 +133,9 @@ class Container extends ContainerArrayAccess implements ContainerInterface
         }
 
         if ($this->storage->hasFactory($key)) {
-            return $this->storage->getFactory($key);
+            $definition = $this->storage->getFactory($key);
+
+            return $definition($this);
         }
 
         // the key was not found

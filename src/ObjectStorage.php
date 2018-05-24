@@ -159,7 +159,7 @@ class ObjectStorage
      */
     public function getFactory(string $key)
     {
-        return $this->definitions['factory'][$key]();
+        return $this->definitions['factory'][$key];
     }
 
     /**
