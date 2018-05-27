@@ -26,7 +26,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * Stores current resolution stack.
      * @var array
      */
-    private $resolutions = [];
+    private $stack = [];
 
     /**
      * Boot up.
@@ -173,6 +173,8 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     public function resolve(string $class, array $args = [])
     {
+        $this->stack[] = [];
+
         try {
             $reflectionClass = new ReflectionClass($class);
         } catch (ReflectionException $e) {
@@ -184,6 +186,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
 
         // if there is no constructor, just return new instance
         if ($constructor === null) {
+            $this->resetStack();
             return new $class;
         }
 
@@ -192,13 +195,14 @@ class Container extends ContainerArrayAccess implements ContainerInterface
 
         // If there is a constructor, but no params
         if (\count($params) === 0) {
+            $this->resetStack();
             return new $class;
         }
 
         $this->resolveParams($params, $args);
 
-        $resolutions = $this->resolutions;
-        $this->resetResolutions();
+        $resolutions = end($this->stack);
+        $this->resetStack();
 
         // return the resolved class
         return $reflectionClass->newInstanceArgs($resolutions);
@@ -243,16 +247,18 @@ class Container extends ContainerArrayAccess implements ContainerInterface
         if (\count($params) === 0) {
             // as we are dealing with a static method
             if ($reflectionMethod->isStatic() === true) {
+                $this->resetStack();
                 return $reflectionMethod->invoke(null);
             } else {
+                $this->resetStack();
                 return $reflectionMethod->invoke($classInstance);
             }
         }
 
         $this->resolveParams($params, $args);
 
-        $resolutions = $this->resolutions;
-        $this->resetResolutions();
+        $resolutions = end($this->stack);
+        $this->resetStack();
 
         // return the resolved class
         return $reflectionMethod->invokeArgs($classInstance, $resolutions);
@@ -263,9 +269,20 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @since 1.0.0
      */
-    private function resetResolutions()
+    private function resetStack()
     {
-        $this->resolutions = [];
+        array_pop($this->stack);
+    }
+
+    /**
+     * Adds a value the resolutions stack.
+     *
+     * @since 1.0.0
+     */
+    private function addToStack($value)
+    {
+        $keys = array_keys($this->stack);
+        $this->stack[end($keys)][] = $value;
     }
 
     /**
@@ -281,7 +298,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     private function resolveFromContainer(string $className)
     {
         if ($this->has($className)) {
-            $this->resolutions[] = $this->get($className);
+            $this->addToStack($this->get($className));
             return true;
         }
         return false;
@@ -316,7 +333,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
             }
 
             // else the param is a class, so run $this->resolve on it
-            $this->resolutions[] = $this->resolve($className, $args);
+            $this->addToStack( $this->resolve($className, $args));
         }
     }
 
@@ -334,12 +351,12 @@ class Container extends ContainerArrayAccess implements ContainerInterface
         $name = $param->name;
 
         if (isset($args[$name])) {
-            $this->resolutions[] = $args[$name];
+            $this->addToStack($args[$name]);
             return;
         }
 
         if ($param->isDefaultValueAvailable()) {
-            $this->resolutions[] = $param->getDefaultValue();
+            $this->addToStack($param->getDefaultValue());
         }
     }
 }
