@@ -89,13 +89,13 @@ $hodl->get('Baz', function($hodl) {
 });
 ````
 
-## Factories
+## Singletons
 
-The above examplse will return the same instance of the service no matter when it is fetched.
-You can also specify that a new instance should be returned each time by using the `addFactory()` method:
+The above examplse will return a new instance of the service no matter when it is fetched.
+You can also specify that the same instance should be returned each time by using the `addFactory()` method:
 
 ```` php
-$hodl->addFactory(Bar::class, function() {
+$hodl->addSingleton(Bar::class, function() {
 	return new Bar();
 });
 ````
@@ -180,8 +180,8 @@ class Bar
 	}
 }
 
-// Add Foo as a service
-$hodl->add('Foo', function() {
+// Add Foo as a singleton
+$hodl->addSingleton('Foo', function() {
 	return new Foo();
 });
 

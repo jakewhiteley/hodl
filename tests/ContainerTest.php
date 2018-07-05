@@ -56,7 +56,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl->add('Hodl\Tests\Classes\DummyClass', function () {
+        $hodl->addSingleton('Hodl\Tests\Classes\DummyClass', function () {
             return new DummyClass('bar');
         });
 
@@ -122,7 +122,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl->addFactory('Hodl\Tests\Classes\DummyClass', function () {
+        $hodl->add('Hodl\Tests\Classes\DummyClass', function () {
             return new DummyClass('foo');
         });
 
@@ -255,7 +255,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl->add('Hodl\Tests\Classes\NeedsResolving', function ($di) {
+        $hodl->addSingleton('Hodl\Tests\Classes\NeedsResolving', function ($di) {
             return $di->resolve('Hodl\Tests\Classes\NeedsResolving');
         });
 
@@ -265,11 +265,11 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $hodl->remove('Hodl\Tests\Classes\NeedsResolving');
 
         $hodl->add('Hodl\Tests\Classes\NeedsResolving', function ($di) {
-            return $di->Resolve('Hodl\Tests\Classes\NeedsResolving');
+            return $di->resolve('Hodl\Tests\Classes\NeedsResolving');
         });
 
-        $hodl->add('Hodl\Tests\Classes\Resolver', function ($di) {
-            return $di->Resolve('Hodl\Tests\Classes\Resolver');
+        $hodl->addSingleton('Hodl\Tests\Classes\Resolver', function ($di) {
+            return $di->resolve('Hodl\Tests\Classes\Resolver');
         });
 
         $hodl->get('Hodl\Tests\Classes\Resolver')->var = 'resolved';
@@ -342,7 +342,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl->add(Resolver::class, function ($di) {
+        $hodl->addSingleton(Resolver::class, function ($di) {
             return $di->resolve(Resolver::class);
         });
 
@@ -367,5 +367,4 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
        $this->assertEquals('not null', $shouldBeResolved);
 
     }
-
 }

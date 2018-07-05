@@ -41,7 +41,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     /**
      * Add a class.
      *
-     * This class is initialized when first retrieved via get(), and is persistent unless explicitly destroyed.
+     * Classes added via this method will return as a new instance when retrieved.
      *
      * @since 1.0.0
      *
@@ -51,13 +51,13 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     public function add(string $key, callable $closure)
     {
-        $this->storage->object($key, $closure);
+        $this->storage->factory($key, $closure);
     }
 
     /**
-     * Add a factory class.
+     * Add a singleton class.
      *
-     * Classes added via this method will return as a new instance when retrieved.
+     * This class is initialized when first retrieved via get(), and is persistent unless explicitly destroyed.
      *
      * @since 1.0.0
      *
@@ -65,9 +65,9 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * @param callable $closure A closure which returns a new instance of the desired object
      *                          A reference to this DIContainer is passed as a param to the closure
      */
-    public function addFactory(string $key, callable $closure)
+    public function addSingleton(string $key, callable $closure)
     {
-        $this->storage->factory($key, $closure);
+        $this->storage->object($key, $closure);
     }
 
     /**
