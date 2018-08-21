@@ -227,7 +227,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     public function resolveMethod($class, string $method, array $args = [])
     {
         if (! \is_callable([$class, $method])) {
-            throw new ContainerException("$class::$method does not exist or is not callable so could not be resolved");
+            throw new ContainerException(get_class($class) . "::$method() does not exist or is not callable so could not be resolved");
         }
 
         $reflectionMethod = new ReflectionMethod($class, $method);
