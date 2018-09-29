@@ -517,6 +517,37 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
+    public function bindings_can_be_removed_from_a_service()
+    {
+        $hodl = new Container();
+
+        $hodl->add(Concrete::class, function () {
+            return new Concrete('foo');
+        });
+
+        $hodl->bind(Concrete::class, Contract::class);
+
+        $this->assertTrue($hodl->get(Contract::class) instanceof Concrete);
+        $hodl->removeAlias(Contract::class);
+        
+        $this->assertTrue($hodl->has(Concrete::class) );
+
+        $this->expectException(NotFoundException::class);
+        $hodl->get(Contract::class);
+    }
+
+    /**
+     * @test
+     */
+    public function removeAlias_returns_false_if_no_action_taken()
+    {
+        $hodl = new Container();
+        $this->assertFalse( $hodl->removeAlias('doesntExist'));
+    }
+
+    /**
+     * @test
+     */
     public function ConcreteClassNotFoundException_is_thrown_when_resolving_an_unbound_interface()
     {
         $hodl = new Container();
