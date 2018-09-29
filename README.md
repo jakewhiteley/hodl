@@ -20,7 +20,7 @@ $hodl->add('Some\Namespace\Foo', function() {
 
 You should always register a service using it's full class name. This is so that the autowiring can work and classes can have their dependencies injected with no fuss.
 
-## Retrieving a service
+### Retrieving a service
 
 As simple as it gets:
 
@@ -28,7 +28,7 @@ As simple as it gets:
 $foo = $hodl->get('Some\Namespace\Foo');
 ````
 
-## Checking if a service exists
+### Checking if a service exists
 
 As all services are referenced by the key you defined it with, you can use `has()` to check if that key has been defined previously:
 
@@ -44,9 +44,10 @@ $hodl->has(Foo::class); // true
 $hodl->has('some\other\class'); // false
 ````
 
-## Removing services
+### Removing services
 
 As the Container implements ArrayAccess you can use `unset()` or the `remove()` method to remove a class:
+
 ```` php
 $hodl['foo'] = function(){
     return new Foo();
@@ -59,7 +60,9 @@ $hodl->remove('foo');
 $hodl->has('foo'); // false
 ````
 
-## ArrayAccess style
+Removing a service will also remove any aliases or bound interfaces as well (more on that below).
+
+### ArrayAccess style
 
 As Hodl implements `ArrayAccess`, you can achieve the above like this instead:
 
@@ -161,7 +164,7 @@ The object will be created an an instance of `Foo\Bar` will be initialized and p
 
 This works recursively so any dependencies of `Foo\Bar` will be magically resolved as well.
 
-## Passing arguments
+### Passing arguments
 
 The resolve method also accepts a second argument, which is an array of extra parameters you want to pass to the object constructors.
 
@@ -177,7 +180,7 @@ $foo = $hodl->resolve('Foo\Foo', [
 ]);
 ````
 
-## Resolving using services
+### Resolving using services
 
 The above examples have an empty container, so all services are injected as new generic instances of that class. But if a service exists within the container, that service will be used instead - allowing your specific instance or a persistent object to be passed to any object which needs it.
 
@@ -215,6 +218,53 @@ $hodl->add('Bar', function($hodl) {
 	return $hodl->resolve('Bar'); // All of Bar's dependencies will be injected as soon as it is fetched
 });
 
+````
+
+### Binding implementations to interfaces
+
+A really useful feature when using the autowiring functionality is to be able to specify in a constructor an interface, and have Hodl deal with passing the correct implementation to the resolved class.
+
+Consider the following:
+
+```` php
+// Basic interface
+interface HelloWorld
+{
+	public function output();
+}
+
+// Service
+class NeedsResolving
+{
+	public function __construct(HelloWorld $writer)
+	{
+		$this->writer = $writer;
+	}
+	
+	public function output()
+	{
+		$this->writer->output();
+	}
+}
+````
+
+We know the `NeedsResolving` class needs some kind of `HelloWorld` implementation to actually work. We can let Hodl know which one using the `bind()` method:
+
+```` php
+class MyPrinter implements HelloWorld
+{
+	public function output()
+	{
+		echo 'Hello world!';
+	}
+}
+
+$hodl->bind(MyPrinter::class, HellowWorld::class);
+
+// Correctly gets an instance of MyPrinter
+$foo = $hodl->resolve(NeedsResolving::class);
+
+$foo->output(); // Outputs 'Hello world!'
 ````
 
 ## Resolving methods
