@@ -20,6 +20,8 @@ class ObjectStorage
         'factory'  => [],
     ];
 
+    private $aliases = [];
+
     /**
      * Stores initialized objects.
      * @var array
@@ -94,7 +96,15 @@ class ObjectStorage
      */
     public function hasObject(string $key)
     {
-        return isset($this->definitions['instance'][$key]);
+        if (isset($this->definitions['instance'][$key])) {
+            return true;
+        }
+
+        if (isset($this->aliases[$key])) {
+            return isset($this->definitions['instance'][$this->aliases[$key]]);
+        }
+
+        return false;
     }
 
     /**
@@ -107,7 +117,15 @@ class ObjectStorage
      */
     public function hasFactory(string $key)
     {
-        return isset($this->definitions['factory'][$key]);
+        if (isset($this->definitions['factory'][$key])) {
+            return true;
+        }
+
+        if (isset($this->aliases[$key])) {
+            return isset($this->definitions['factory'][$this->aliases[$key]]);
+        }
+
+        return false;
     }
 
     /**
@@ -120,7 +138,15 @@ class ObjectStorage
      */
     public function hasStored(string $key)
     {
-        return isset($this->store[$key]);
+        if (isset($this->store[$key])) {
+            return true;
+        }
+
+        if (isset($this->aliases[$key])) {
+            return isset($this->store[$this->aliases[$key]]);
+        }
+
+        return false;
     }
 
     /**
@@ -133,7 +159,11 @@ class ObjectStorage
      */
     public function getDefinition($key)
     {
-        return $this->definitions['instance'][$key];
+        if (isset($this->definitions['instance'][$key])) {
+            return $this->definitions['instance'][$key];
+        }
+
+        return $this->definitions['instance'][$this->aliases[$key]];
     }
 
     /**
@@ -159,7 +189,11 @@ class ObjectStorage
      */
     public function getFactory(string $key)
     {
-        return $this->definitions['factory'][$key];
+        if (isset($this->definitions['factory'][$key])) {
+            return $this->definitions['factory'][$key];
+        }
+
+        return $this->definitions['factory'][$this->aliases[$key]];
     }
 
     /**
@@ -172,20 +206,43 @@ class ObjectStorage
      */
     public function remove(string $key)
     {
+        // check if the $key is an alias
+        if (isset($this->aliases[$key])) {
+            $alias = $key;
+            $key = $this->aliases[$key];
+            unset($this->aliases[$alias]);
+        }
+
         // if the key exists as a factory
         if ($this->hasFactory($key)) {
             unset($this->definitions['factory'][$key]);
+            $this->remove_alias_for($key);
             return ! $this->hasFactory($key);
         }
 
         // if the key exists as an object
         if ($this->hasObject($key)) {
             unset($this->definitions['instance'][$key], $this->store[$key]);
-            return ! $this->hasObject($key);
+            $this->remove_alias_for($key);
+            return ! ($this->hasObject($key) || $this->hasStored($key));
         }
 
         // the key did not exist
         return false;
+    }
+
+    public function addAlias($key, $alias)
+    {
+        $this->aliases[$alias] = $key;
+    }
+
+    protected function remove_alias_for($key)
+    {
+        $alias = \array_search($key, $this->aliases);
+
+        if ($alias !== false) {
+            unset($this->aliases[$alias]);
+        }
     }
 
     /**

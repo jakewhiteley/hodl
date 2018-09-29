@@ -92,6 +92,11 @@ class Container extends ContainerArrayAccess implements ContainerInterface
         }
     }
 
+    public function alias($key, $alias)
+    {
+        $this->storage->addAlias($key, $alias);
+    }
+
     /**
      * Check if a given key exists within this container, either as an object or a factory.
      *
@@ -201,7 +206,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
 
         $this->resolveParams($params, $args);
 
-        $resolutions = end($this->stack);
+        $resolutions = \end($this->stack);
         $this->resetStack();
 
         // return the resolved class
@@ -227,7 +232,11 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     public function resolveMethod($class, string $method, array $args = [])
     {
         if (! \is_callable([$class, $method])) {
-            throw new ContainerException(get_class($class) . "::$method() does not exist or is not callable so could not be resolved");
+            if (\is_string($class)) {
+                throw new ContainerException($class . "::$method() does not exist or is not callable so could not be resolved");
+            } else {
+                throw new ContainerException(\get_class($class) . "::$method() does not exist or is not callable so could not be resolved");
+            }
         }
 
         $reflectionMethod = new ReflectionMethod($class, $method);
@@ -257,7 +266,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
 
         $this->resolveParams($params, $args);
 
-        $resolutions = end($this->stack);
+        $resolutions = \end($this->stack);
         $this->resetStack();
 
         // return the resolved class
@@ -271,7 +280,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     private function resetStack()
     {
-        array_pop($this->stack);
+        \array_pop($this->stack);
     }
 
     /**
@@ -281,8 +290,8 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     private function addToStack($value)
     {
-        $keys = array_keys($this->stack);
-        $this->stack[end($keys)][] = $value;
+        $keys = \array_keys($this->stack);
+        $this->stack[\end($keys)][] = $value;
     }
 
     /**
@@ -333,7 +342,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
             }
 
             // else the param is a class, so run $this->resolve on it
-            $this->addToStack( $this->resolve($className, $args));
+            $this->addToStack($this->resolve($className, $args));
         }
     }
 

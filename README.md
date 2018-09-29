@@ -114,6 +114,23 @@ $hodl->addInstance($instance);
 $hodl->get('Foo\Bar')->prop // equals 'foobar'
 ````
 
+## Aliases
+
+Sometimes it is tiresome typing in fully qualified class names to get access to a service. Luckily you can also define an **alias** to a service for quick retrieval:
+
+```` php
+// using the ::class shorthand
+$hodl->add(Foo::class, function() {
+    return new Foo();
+});
+
+// Adda alias.
+$hodl->alias(Foo:class, 'myAlias');
+
+$hodl->has(Foo::class); // true
+$hodl->has('myAlias'); // true
+````
+
 ## Autowiring (resolving dependencies)
 
 Aside as using it as a container for passing objects around, it can also be used to auotmatically resolve objects using the Reflection API and achieve Inversion of Control.

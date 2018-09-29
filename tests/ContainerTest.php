@@ -291,14 +291,31 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
         // Assert that the resolution was recursive.
         $this->assertInstanceOf(\Hodl\Tests\Classes\Nested\Resolver::class, $shouldBeResolver->nested);
+    } 
+
+    /**
+     * @test
+     */
+    public function an_exception_is_thrown_if_resolving_a_non_existant_method()
+    {
+        $hodl = new Container();
+
+        $this->expectException(ContainerException::class);
+        $dummy = new DummyClass();
+        // Check if an exception thrown if the class method exist.
+        $hodl->resolveMethod($dummy, 'DoesntExist');        
+    }
+
+    /**
+     * @test
+     */
+    public function an_exception_is_thrown_if_resolving_a_non_existant_method_on_non_existant_class()
+    {
+        $hodl = new Container();
 
         $this->expectException(ContainerException::class);
         // Check if an exception thrown is the class doesnt exist.
         $hodl->resolveMethod('DoesntExist', 'hasNoStaticParams');
-
-        $this->expectException(ContainerException::class);
-        // Check if an exception thrown is the class method exist.
-        $hodl->resolveMethod(DummyClass::class, 'DoesntExist');
     }
 
     /**
@@ -365,6 +382,111 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         ]);
 
        $this->assertEquals('not null', $shouldBeResolved);
-
     }
+
+    /**
+     * @test
+     */
+    public function services_can_be_aliased()
+    {
+        $hodl = new Container();
+
+        $hodl->add(DummyClass::class, function () {
+            return new DummyClass('foo');
+        });
+
+        $hodl->alias(DummyClass::class, 'dummy');
+        $this->assertTrue($hodl->has('dummy'));
+
+        $this->assertTrue($hodl->get('dummy') instanceof DummyClass);
+
+        return $hodl;
+    }   
+
+    /**
+     * @test
+     * @depends services_can_be_aliased
+     */
+    public function services_can_be_removed_by_alias($hodl)
+    {
+        $this->assertTrue($hodl->get('dummy') instanceof DummyClass);
+        $this->assertTrue($hodl->get(DummyClass::class) instanceof DummyClass);
+        $hodl->remove('dummy');
+        $this->assertFalse($hodl->has('dummy'));
+        $this->assertFalse($hodl->has(DummyClass::class));
+    }    
+
+    /**
+     * @test
+     */
+    public function services_have_aliases_removed_upon_remove()
+    {
+        $hodl = new Container();
+
+        $hodl->add(DummyClass::class, function () {
+            return new DummyClass('foo');
+        });
+
+        $hodl->alias(DummyClass::class, 'dummy');
+
+        $this->assertTrue($hodl->get('dummy') instanceof DummyClass);
+        $this->assertTrue($hodl->get(DummyClass::class) instanceof DummyClass);
+        $hodl->remove(DummyClass::class);
+        $this->assertFalse($hodl->has('dummy'));
+        $this->assertFalse($hodl->has(DummyClass::class));
+    }
+
+    /**
+     * @test
+     */
+    public function singletons_can_be_aliased()
+    {
+        $hodl = new Container();
+
+        $hodl->addSingleton(DummyClass::class, function () {
+            return new DummyClass('foo');
+        });
+
+        $hodl->alias(DummyClass::class, 'dummy');
+        $this->assertTrue($hodl->has('dummy'));
+
+        $singleton = $hodl->get('dummy');
+        $this->assertTrue($singleton instanceof DummyClass);
+        $this->assertEquals($singleton->foo, 'foo');
+        $this->assertEquals($singleton->foo, $hodl->get('dummy')->foo);
+        return $hodl;
+    }
+
+    /**
+     * @test
+     * @depends singletons_can_be_aliased
+     */
+    public function singletons_can_be_removed_by_alias($hodl)
+    {
+        $this->assertTrue($hodl->get('dummy') instanceof DummyClass);
+        $this->assertTrue($hodl->get(DummyClass::class) instanceof DummyClass);
+        $hodl->remove('dummy');
+        $this->assertFalse($hodl->has('dummy'));
+        $this->assertFalse($hodl->has(DummyClass::class));
+    }
+
+    /**
+     * @test
+     */
+    public function singletons_have_aliases_removed_upon_remove()
+    {
+        $hodl = new Container();
+
+        $hodl->addSingleton(DummyClass::class, function () {
+            return new DummyClass('foo');
+        });
+
+        $hodl->alias(DummyClass::class, 'dummy');
+
+        $this->assertTrue($hodl->get('dummy') instanceof DummyClass);
+        $this->assertTrue($hodl->get(DummyClass::class) instanceof DummyClass);
+        $hodl->remove(DummyClass::class);
+        $this->assertFalse($hodl->has('dummy'));
+        $this->assertFalse($hodl->has(DummyClass::class));
+    } 
 }
