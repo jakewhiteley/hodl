@@ -185,6 +185,19 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     }
 
     /**
+     * Remove just an alias or binding, leaving the object and key intact.
+     *
+     * @since  1.3.0
+     *
+     * @param  string $alias The alias to remove.
+     * @return bool
+     */
+    public function removeAlias($alias)
+    {
+        return $this->storage->removeAlias($alias);
+    }
+
+    /**
      * Recursively resolve a given class name via DI.
      *
      * If a key exists within the container it will be injected, otherwise a new instance of the

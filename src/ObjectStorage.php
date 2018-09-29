@@ -236,6 +236,24 @@ class ObjectStorage
     }
 
     /**
+     * Remove just an alias or binding, leaving the object and key intact.
+     *
+     * @since  1.3.0
+     *
+     * @param  string $alias The alias to remove.
+     * @return bool
+     */
+    public function removeAlias($alias)
+    {
+        if (isset($this->aliases[$alias])) {
+            unset($this->aliases[$alias]);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Bind a given service to an alias.
      *
      * @since  1.3.0
