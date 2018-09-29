@@ -134,6 +134,9 @@ $hodl->has(Foo::class); // true
 $hodl->has('myAlias'); // true
 ````
 
+#### Removing aliases
+If at somepoint you need to remove an alias, or binding (see below) then you can use the `removeAlias($alias)` method.
+
 ## Autowiring (resolving dependencies)
 
 Aside as using it as a container for passing objects around, it can also be used to auotmatically resolve objects using the Reflection API and achieve Inversion of Control.
@@ -266,6 +269,9 @@ $foo = $hodl->resolve(NeedsResolving::class);
 
 $foo->output(); // Outputs 'Hello world!'
 ````
+
+#### Removing bindings
+As under the hood `bind()` as an alias for `alias()`, the `removeAlias($interface)` method will remove a binding. Useful if for whatever reason you had to hot-swap an implementation out for another.
 
 ## Resolving methods
 The `resolveMethod($class, $methodName, $args)` method allows autowiring of class members the same way that `resolve()` works on classes.
