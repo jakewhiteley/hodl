@@ -7,10 +7,14 @@ use Hodl\Exceptions\ContainerException;
 use Hodl\Exceptions\NotFoundException;
 use Hodl\Exceptions\KeyExistsException;
 use Hodl\Exceptions\InvalidKeyException;
+use Hodl\Exceptions\ConcreteClassNotFoundException;
 use Hodl\Tests\Classes\DummyClass;
 use Hodl\Tests\Classes\NoConstructor;
 use Hodl\Tests\Classes\NeedsResolving;
 use Hodl\Tests\Classes\Resolver;
+use Hodl\Tests\Classes\Contract;
+use Hodl\Tests\Classes\Concrete;
+use Hodl\Tests\Classes\NeedsContract;
 
 class ContainerTest extends \PHPUnit\Framework\TestCase
 {
@@ -488,5 +492,36 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $hodl->remove(DummyClass::class);
         $this->assertFalse($hodl->has('dummy'));
         $this->assertFalse($hodl->has(DummyClass::class));
-    } 
+    }
+
+    /**
+     * @test
+     */
+    public function services_can_be_bound_to_interfaces()
+    {
+        $hodl = new Container();
+
+        $hodl->add(Concrete::class, function () {
+            return new Concrete('foo');
+        });
+
+        $hodl->bind(Concrete::class, Contract::class);
+
+        $this->assertTrue($hodl->get(Concrete::class) instanceof Contract);
+
+        $resolved = $hodl->resolve(NeedsContract::class);
+
+        $this->assertTrue($resolved->contract instanceof Contract);
+    }
+
+    /**
+     * @test
+     */
+    public function ConcreteClassNotFoundException_is_thrown_when_resolving_an_unbound_interface()
+    {
+        $hodl = new Container();
+
+        $this->expectException(ConcreteClassNotFoundException::class);
+        $resolved = $hodl->resolve(NeedsContract::class);
+    }
 }

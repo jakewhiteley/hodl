@@ -8,6 +8,7 @@ use ReflectionParameter;
 use Psr\Container\ContainerInterface;
 use Hodl\Exceptions\ContainerException;
 use Hodl\Exceptions\NotFoundException;
+use Hodl\Exceptions\ConcreteClassNotFoundException;
 
 /**
  * A simple Service container with automatic constructor resolution abilities.
@@ -92,9 +93,32 @@ class Container extends ContainerArrayAccess implements ContainerInterface
         }
     }
 
+    /**
+     * Bind a given service to an alias.
+     *
+     * @since  1.3.0
+     *
+     * @param  string $key   The service key to attach the alias to.
+     * @param  string $alias The alias to attach.
+     */
     public function alias($key, $alias)
     {
         $this->storage->addAlias($key, $alias);
+    }
+
+    /**
+     * Bind a given concrete class to an interface.
+     *
+     * Alias for alias().
+     *
+     * @since  1.3.0
+     *
+     * @param  string $key       The concrete fully qualified class name to bind.
+     * @param  string $interface The interface fully qualified name to bind.
+     */
+    public function bind($key, $interface)
+    {
+        $this->storage->addAlias($key, $interface);
     }
 
     /**
@@ -124,7 +148,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     public function get($key)
     {
         if (! \is_string($key) || empty($key)) {
-            throw new ContainerException('$key must be a string');
+            throw new ContainerException("$key must be a string");
         }
 
         if ($this->storage->hasStored($key)) {
@@ -152,7 +176,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @since 1.0.0
      *
-     * @param  string $key The key to remove.
+     * @param  string $key The key to remove. Can also be an alias or bound interface.
      * @return bool        Whether the key and associated object were removed.
      */
     public function remove(string $key)
@@ -233,10 +257,12 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     {
         if (! \is_callable([$class, $method])) {
             if (\is_string($class)) {
-                throw new ContainerException($class . "::$method() does not exist or is not callable so could not be resolved");
+                $error = $class . "::$method() does not exist or is not callable so could not be resolved";
             } else {
-                throw new ContainerException(\get_class($class) . "::$method() does not exist or is not callable so could not be resolved");
+                $error = \get_class($class) . "::$method() does not exist or is not callable so could not be resolved";
             }
+
+            throw new ContainerException($error);
         }
 
         $reflectionMethod = new ReflectionMethod($class, $method);
@@ -339,6 +365,10 @@ class Container extends ContainerArrayAccess implements ContainerInterface
             // if the class exists in the container, inject it
             if ($this->resolveFromContainer($className)) {
                 continue;
+            }
+
+            if ($class->isInterface()) {
+                throw new ConcreteClassNotFoundException("$className is an interface with no bound implementation.");
             }
 
             // else the param is a class, so run $this->resolve on it

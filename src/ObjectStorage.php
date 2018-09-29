@@ -20,6 +20,10 @@ class ObjectStorage
         'factory'  => [],
     ];
 
+    /**
+     * Map of aliases.
+     * @var array
+     */
     private $aliases = [];
 
     /**
@@ -216,14 +220,14 @@ class ObjectStorage
         // if the key exists as a factory
         if ($this->hasFactory($key)) {
             unset($this->definitions['factory'][$key]);
-            $this->remove_alias_for($key);
+            $this->removeAliasFor($key);
             return ! $this->hasFactory($key);
         }
 
         // if the key exists as an object
         if ($this->hasObject($key)) {
             unset($this->definitions['instance'][$key], $this->store[$key]);
-            $this->remove_alias_for($key);
+            $this->removeAliasFor($key);
             return ! ($this->hasObject($key) || $this->hasStored($key));
         }
 
@@ -231,17 +235,36 @@ class ObjectStorage
         return false;
     }
 
+    /**
+     * Bind a given service to an alias.
+     *
+     * @since  1.3.0
+     *
+     * @param  string $key   The service key to attach the alias to.
+     * @param  string $alias The alias to attach.
+     */
     public function addAlias($key, $alias)
     {
         $this->aliases[$alias] = $key;
     }
 
-    protected function remove_alias_for($key)
+    /**
+     * Remove all aliases for a given key.
+     *
+     * The key can be the original classname, or an alias for that class.
+     *
+     * @since  1.3.0
+     *
+     * @param  string $key The key to remove the aliases for.
+     */
+    protected function removeAliasFor($key)
     {
-        $alias = \array_search($key, $this->aliases);
+        $aliases = \array_keys($this->aliases, $key);
 
-        if ($alias !== false) {
-            unset($this->aliases[$alias]);
+        if (!empty($aliases)) {
+            foreach ($aliases as $alias) {
+                unset($this->aliases[$alias]);
+            }
         }
     }
 
