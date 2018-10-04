@@ -555,4 +555,24 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $this->expectException(ConcreteClassNotFoundException::class);
         $resolved = $hodl->resolve(NeedsContract::class);
     }
+
+     /**
+     * @test
+     */
+    public function instances_can_be_bound_to_interfaces()
+    {
+        $hodl = new Container();
+
+        $i = new Concrete();
+
+        $hodl->addInstance($i);
+
+        $hodl->bind(Concrete::class, Contract::class);
+
+        $this->assertTrue($hodl->get(Concrete::class) instanceof Contract);
+
+        $resolved = $hodl->resolve(NeedsContract::class);
+
+        $this->assertTrue($resolved->contract instanceof Contract);
+    }
 }

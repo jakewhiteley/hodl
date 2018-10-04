@@ -180,7 +180,11 @@ class ObjectStorage
      */
     public function getStored(string $key)
     {
-        return $this->store[$key];
+        if (isset($this->store[$key])) {
+            return $this->store[$key];
+        }
+
+        return $this->store[$this->aliases[$key]];
     }
 
     /**
