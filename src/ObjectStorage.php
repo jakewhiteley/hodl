@@ -87,6 +87,10 @@ class ObjectStorage
      */
     public function store(string $key, $object)
     {
+        if (isset($this->aliases[$key])) {
+            $key = $this->aliases[$key];
+        }
+
         $this->store[$key] = $object;
     }
 
@@ -193,7 +197,7 @@ class ObjectStorage
      * @since 1.0.0
      *
      * @param  string  $key Object key.
-     * @return object
+     * @return callable
      */
     public function getFactory(string $key)
     {
@@ -295,8 +299,8 @@ class ObjectStorage
      *
      * @since 1.0.0
      *
-     * @throws Hodl\Exceptions\InvalidKeyException if the key if not a valid class name.
-     * @throws Hodl\Exceptions\KeyExistsException if the key already exists.
+     * @throws \Hodl\Exceptions\InvalidKeyException If the key if not a valid class name.
+     * @throws \Hodl\Exceptions\KeyExistsException  If the key already exists.
      *
      * @param  string $key The key to check.
      */
