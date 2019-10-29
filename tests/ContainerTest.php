@@ -8,7 +8,9 @@ use Hodl\Exceptions\NotFoundException;
 use Hodl\Exceptions\KeyExistsException;
 use Hodl\Exceptions\InvalidKeyException;
 use Hodl\Exceptions\ConcreteClassNotFoundException;
+use Hodl\Tests\Classes\CanHaveConstructorParams;
 use Hodl\Tests\Classes\DummyClass;
+use Hodl\Tests\Classes\NeedsServiceAndConstructorParams;
 use Hodl\Tests\Classes\NoConstructor;
 use Hodl\Tests\Classes\NeedsResolving;
 use Hodl\Tests\Classes\Resolver;
@@ -574,5 +576,99 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $resolved = $hodl->resolve(NeedsContract::class);
 
         $this->assertTrue($resolved->contract instanceof Contract);
+    }
+
+    /**
+     * @test
+     */
+    public function instances_can_be_made_with_parameters()
+    {
+        $hodl = new Container();
+
+        $hodl->add(CanHaveConstructorParams::class, function(Container $hodl, $foo){
+            return new CanHaveConstructorParams($foo);
+        });
+
+        $object = $hodl->get(CanHaveConstructorParams::class, 'bar');
+        $this->assertEquals('bar', $object->getFoo());
+    }
+
+    /**
+     * @test
+     */
+    public function instances_can_be_resolved_with_parameters()
+    {
+        $hodl = new Container();
+
+        $hodl->add(CanHaveConstructorParams::class, function(Container $hodl, $foo){
+            return $hodl->resolve(CanHaveConstructorParams::class, compact('foo'));
+        });
+
+        $object = $hodl->get(CanHaveConstructorParams::class, 'chaz');
+        $this->assertEquals('chaz', $object->getFoo());
+    }
+
+    /**
+     * @test
+     */
+    public function instances_can_be_resolved_with_parameters_and_services()
+    {
+        $hodl = new Container();
+
+        $hodl->add(NeedsServiceAndConstructorParams::class, function(Container $hodl, $foo){
+            return $hodl->resolve(NeedsServiceAndConstructorParams::class, compact('foo'));
+        });
+
+        $object = $hodl->get(NeedsServiceAndConstructorParams::class, 'chaz');
+
+        $this->assertEquals('chaz', $object->getFoo());
+        $this->assertInstanceOf(Resolver::class, $object->resolver);
+    }
+
+    /**
+     * @test
+     */
+    public function singletons_can_be_made_with_parameters()
+    {
+        $hodl = new Container();
+
+        $hodl->addSingleton(CanHaveConstructorParams::class, function(Container $hodl, $foo){
+            return new CanHaveConstructorParams($foo);
+        });
+
+        $object = $hodl->get(CanHaveConstructorParams::class, 'bar');
+        $this->assertEquals('bar', $object->getFoo());
+    }
+
+    /**
+     * @test
+     */
+    public function singletons_can_be_resolved_with_parameters()
+    {
+        $hodl = new Container();
+
+        $hodl->addSingleton(CanHaveConstructorParams::class, function(Container $hodl, $foo){
+            return $hodl->resolve(CanHaveConstructorParams::class, compact('foo'));
+        });
+
+        $object = $hodl->get(CanHaveConstructorParams::class, 'chaz');
+        $this->assertEquals('chaz', $object->getFoo());
+    }
+
+    /**
+     * @test
+     */
+    public function singletons_can_be_resolved_with_parameters_and_services()
+    {
+        $hodl = new Container();
+
+        $hodl->addSingleton(NeedsServiceAndConstructorParams::class, function(Container $hodl, $foo){
+            return $hodl->resolve(NeedsServiceAndConstructorParams::class, compact('foo'));
+        });
+
+        $object = $hodl->get(NeedsServiceAndConstructorParams::class, 'chaz');
+
+        $this->assertEquals('chaz', $object->getFoo());
+        $this->assertInstanceOf(Resolver::class, $object->resolver);
     }
 }
