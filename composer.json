@@ -22,7 +22,7 @@
         }
     },
     "autoload-dev": {
-        "psr-4": { 
+        "psr-4": {
             "Hodl\\Tests\\": "tests/"
         }
     },
@@ -31,23 +31,23 @@
         "psr/container": "*"
     },
     "require-dev": {
-        "squizlabs/php_codesniffer": "~3.0",
-        "phpunit/phpunit": "~7.0",
-        "friendsofphp/php-cs-fixer": "^2.11"
+        "squizlabs/php_codesniffer": "^3.0",
+        "phpunit/phpunit": "^6.5",
+        "friendsofphp/php-cs-fixer": "^2.16"
     },
     "scripts": {
         "sniff": [
-          "phpcs --extensions=php ."
+          "vendor/bin/phpcs --extensions=php ."
         ],
         "fix": [
-          "php-cs-fixer fix",
-          "phpcbf --extensions=php ."
+          "vendor/bin/php-cs-fixer fix",
+          "vendor/bin/phpcbf --extensions=php ."
         ],
         "test": [
-            "phpunit --coverage-text"
+            "vendor/bin/phpunit --coverage-text"
         ],
         "report": [
-            "phpunit --coverage-html coverage"
+            "vendor/bin/phpunit --coverage-html coverage"
         ]
     }
 }
