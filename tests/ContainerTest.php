@@ -17,8 +17,10 @@ use Hodl\Tests\Classes\Resolver;
 use Hodl\Tests\Classes\Contract;
 use Hodl\Tests\Classes\Concrete;
 use Hodl\Tests\Classes\NeedsContract;
+use Psr\Container\ContainerInterface;
+use PHPUnit\Framework\TestCase;
 
-class ContainerTest extends \PHPUnit\Framework\TestCase
+class ContainerTest extends TestCase
 {
     /**
      * @test
@@ -26,7 +28,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     public function a_container_can_be_booted_and_extends_psr11()
     {
         $hodl = new Container();
-        $this->assertInstanceOf(\Psr\Container\ContainerInterface::class, $hodl);
+        $this->assertInstanceOf(ContainerInterface::class, $hodl);
     }
 
     /**
@@ -152,7 +154,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
         return $hodl;
     }
-    
+
     /**
      * @test
      * @depends get_returns_a_different_factory_instance_every_time
@@ -297,7 +299,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
         // Assert that the resolution was recursive.
         $this->assertInstanceOf(\Hodl\Tests\Classes\Nested\Resolver::class, $shouldBeResolver->nested);
-    } 
+    }
 
     /**
      * @test
@@ -309,7 +311,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $this->expectException(ContainerException::class);
         $dummy = new DummyClass();
         // Check if an exception thrown if the class method exist.
-        $hodl->resolveMethod($dummy, 'DoesntExist');        
+        $hodl->resolveMethod($dummy, 'DoesntExist');
     }
 
     /**
@@ -407,7 +409,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($hodl->get('dummy') instanceof DummyClass);
 
         return $hodl;
-    }   
+    }
 
     /**
      * @test
@@ -420,7 +422,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $hodl->remove('dummy');
         $this->assertFalse($hodl->has('dummy'));
         $this->assertFalse($hodl->has(DummyClass::class));
-    }    
+    }
 
     /**
      * @test
@@ -531,7 +533,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
         $this->assertTrue($hodl->get(Contract::class) instanceof Concrete);
         $hodl->removeAlias(Contract::class);
-        
+
         $this->assertTrue($hodl->has(Concrete::class) );
 
         $this->expectException(NotFoundException::class);
