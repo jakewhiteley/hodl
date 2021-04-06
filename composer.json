@@ -1,7 +1,7 @@
 {
     "name": "jakewhiteley/hodl",
     "license": "MIT",
-    "description": "A lightweight dependency injection cointainer for PHP, which sites inbetween Pimple and the Laravel Container",
+    "description": "A lightweight PSR-11 dependency injection container for PHP, which sites in between Pimple and the Laravel Container",
     "authors": [
         {
             "name": "Jake Whiteley",
@@ -22,13 +22,13 @@
         }
     },
     "autoload-dev": {
-        "psr-4": { 
+        "psr-4": {
             "Hodl\\Tests\\": "tests/"
         }
     },
     "require": {
-        "php": ">=7.0",
-        "psr/container": "*"
+        "php": ">=7.4",
+        "psr/container": "^2.0"
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "~3.0",
