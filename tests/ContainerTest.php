@@ -3,20 +3,20 @@
 namespace Hodl\Tests;
 
 use Hodl\Container;
-use Hodl\Exceptions\ContainerException;
-use Hodl\Exceptions\NotFoundException;
-use Hodl\Exceptions\KeyExistsException;
-use Hodl\Exceptions\InvalidKeyException;
 use Hodl\Exceptions\ConcreteClassNotFoundException;
+use Hodl\Exceptions\ContainerException;
+use Hodl\Exceptions\InvalidKeyException;
+use Hodl\Exceptions\KeyExistsException;
+use Hodl\Exceptions\NotFoundException;
 use Hodl\Tests\Classes\CanHaveConstructorParams;
+use Hodl\Tests\Classes\Concrete;
+use Hodl\Tests\Classes\Contract;
 use Hodl\Tests\Classes\DummyClass;
+use Hodl\Tests\Classes\NeedsContract;
+use Hodl\Tests\Classes\NeedsResolving;
 use Hodl\Tests\Classes\NeedsServiceAndConstructorParams;
 use Hodl\Tests\Classes\NoConstructor;
-use Hodl\Tests\Classes\NeedsResolving;
 use Hodl\Tests\Classes\Resolver;
-use Hodl\Tests\Classes\Contract;
-use Hodl\Tests\Classes\Concrete;
-use Hodl\Tests\Classes\NeedsContract;
 
 class ContainerTest extends \PHPUnit\Framework\TestCase
 {
@@ -120,7 +120,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     }
 
 
-     /**
+    /**
      * @test
      * @return Hodl\Container An instance of Container containing a DummyClass instance.
      */
@@ -152,7 +152,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
         return $hodl;
     }
-    
+
     /**
      * @test
      * @depends get_returns_a_different_factory_instance_every_time
@@ -297,7 +297,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
         // Assert that the resolution was recursive.
         $this->assertInstanceOf(\Hodl\Tests\Classes\Nested\Resolver::class, $shouldBeResolver->nested);
-    } 
+    }
 
     /**
      * @test
@@ -309,7 +309,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $this->expectException(ContainerException::class);
         $dummy = new DummyClass();
         // Check if an exception thrown if the class method exist.
-        $hodl->resolveMethod($dummy, 'DoesntExist');        
+        $hodl->resolveMethod($dummy, 'DoesntExist');
     }
 
     /**
@@ -384,10 +384,10 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $hodl = new Container();
 
         $shouldBeResolved = $hodl->resolveMethod(DummyClass::class, 'hasParams', [
-            'param' => 'not null'
+            'param' => 'not null',
         ]);
 
-       $this->assertEquals('not null', $shouldBeResolved);
+        $this->assertEquals('not null', $shouldBeResolved);
     }
 
     /**
@@ -407,7 +407,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($hodl->get('dummy') instanceof DummyClass);
 
         return $hodl;
-    }   
+    }
 
     /**
      * @test
@@ -420,7 +420,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $hodl->remove('dummy');
         $this->assertFalse($hodl->has('dummy'));
         $this->assertFalse($hodl->has(DummyClass::class));
-    }    
+    }
 
     /**
      * @test
@@ -531,8 +531,8 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
         $this->assertTrue($hodl->get(Contract::class) instanceof Concrete);
         $hodl->removeAlias(Contract::class);
-        
-        $this->assertTrue($hodl->has(Concrete::class) );
+
+        $this->assertTrue($hodl->has(Concrete::class));
 
         $this->expectException(NotFoundException::class);
         $hodl->get(Contract::class);
@@ -544,7 +544,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     public function removeAlias_returns_false_if_no_action_taken()
     {
         $hodl = new Container();
-        $this->assertFalse( $hodl->removeAlias('doesntExist'));
+        $this->assertFalse($hodl->removeAlias('doesntExist'));
     }
 
     /**
@@ -558,7 +558,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $resolved = $hodl->resolve(NeedsContract::class);
     }
 
-     /**
+    /**
      * @test
      */
     public function instances_can_be_bound_to_interfaces()
@@ -585,7 +585,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl->add(CanHaveConstructorParams::class, function(Container $hodl, $foo){
+        $hodl->add(CanHaveConstructorParams::class, function (Container $hodl, $foo) {
             return new CanHaveConstructorParams($foo);
         });
 
@@ -600,7 +600,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl->add(CanHaveConstructorParams::class, function(Container $hodl, $foo){
+        $hodl->add(CanHaveConstructorParams::class, function (Container $hodl, $foo) {
             return $hodl->resolve(CanHaveConstructorParams::class, compact('foo'));
         });
 
@@ -615,7 +615,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl->add(NeedsServiceAndConstructorParams::class, function(Container $hodl, $foo){
+        $hodl->add(NeedsServiceAndConstructorParams::class, function (Container $hodl, $foo) {
             return $hodl->resolve(NeedsServiceAndConstructorParams::class, compact('foo'));
         });
 
@@ -632,7 +632,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl->addSingleton(CanHaveConstructorParams::class, function(Container $hodl, $foo){
+        $hodl->addSingleton(CanHaveConstructorParams::class, function (Container $hodl, $foo) {
             return new CanHaveConstructorParams($foo);
         });
 
@@ -647,7 +647,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl->addSingleton(CanHaveConstructorParams::class, function(Container $hodl, $foo){
+        $hodl->addSingleton(CanHaveConstructorParams::class, function (Container $hodl, $foo) {
             return $hodl->resolve(CanHaveConstructorParams::class, compact('foo'));
         });
 
@@ -662,7 +662,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     {
         $hodl = new Container();
 
-        $hodl->addSingleton(NeedsServiceAndConstructorParams::class, function(Container $hodl, $foo){
+        $hodl->addSingleton(NeedsServiceAndConstructorParams::class, function (Container $hodl, $foo) {
             return $hodl->resolve(NeedsServiceAndConstructorParams::class, compact('foo'));
         });
 

@@ -14,7 +14,7 @@ class ContainerArrayAccess implements ArrayAccess
      * @since 1.0.0
      *
      * @param  string  $offset The key to set
-     * @param  closure $value  The value to set
+     * @param  \closure $value  The value to set
      */
     public function offsetSet($offset, $value)
     {

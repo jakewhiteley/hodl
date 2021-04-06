@@ -49,7 +49,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * @param callable $closure A closure which returns a new instance of the desired object
      *                          A reference to this DIContainer is passed as a param to the closure
      */
-    public function add(string $key, callable $closure)
+    public function add(string $key, callable $closure): void
     {
         $this->storage->factory($key, $closure);
     }
@@ -63,7 +63,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * @param callable $closure A closure which returns a new instance of the desired object
      *                          A reference to this DIContainer is passed as a param to the closure
      */
-    public function addSingleton(string $key, callable $closure)
+    public function addSingleton(string $key, callable $closure): void
     {
         $this->storage->object($key, $closure);
     }
@@ -78,7 +78,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @throws ContainerException If no object was supplied.
      */
-    public function addInstance($key, $object = null)
+    public function addInstance($key, $object = null): void
     {
         if (\is_object($key)) {
             $this->storage->instance(\get_class($key), $key);
@@ -97,7 +97,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @since  1.3.0 Introduced.
      */
-    public function alias($key, $alias)
+    public function alias(string $key, string $alias): void
     {
         $this->storage->addAlias($key, $alias);
     }
@@ -112,7 +112,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @since  1.3.0 Introduced.
      */
-    public function bind($key, $interface)
+    public function bind(string $key, string $interface): void
     {
         $this->storage->addAlias($key, $interface);
     }
@@ -120,18 +120,18 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     /**
      * Check if a given key exists within this container, either as an object or a factory.
      *
-     * @param string $key The key to check for.
+     * @param string $id The key to check for.
      * @return boolean If the key exists.
      */
-    public function has($key)
+    public function has(string $id): bool
     {
-        return $this->storage->hasObject($key) || $this->storage->hasFactory($key);
+        return $this->storage->hasObject($id) || $this->storage->hasFactory($id);
     }
 
     /**
      * Retrieves an object for a given key.
      *
-     * @param string $key  The key to lookup.
+     * @param string $id   The key to lookup.
      * @param array  $args The key to lookup.
      * @return object|bool The requested object.
      *
@@ -140,30 +140,30 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @since 1.4.0 Allows any number of args to be passed when resolving from a factory definition.
      */
-    public function get($key, ...$args)
+    public function get(string $id, ...$args)
     {
-        if (!\is_string($key) || empty($key)) {
-            throw new ContainerException("$key must be a string");
+        if (!\is_string($id) || empty($id)) {
+            throw new ContainerException("$id must be a string");
         }
 
-        if ($this->storage->hasStored($key)) {
-            return $this->storage->getStored($key);
+        if ($this->storage->hasStored($id)) {
+            return $this->storage->getStored($id);
         }
 
         // key exists but hasn't been initialized yet
-        if ($this->storage->hasObject($key)) {
-            $this->storage->store($key, $this->storage->getDefinition($key)($this, ...$args));
-            return $this->storage->getStored($key);
+        if ($this->storage->hasObject($id)) {
+            $this->storage->store($id, $this->storage->getDefinition($id)($this, ...$args));
+            return $this->storage->getStored($id);
         }
 
-        if ($this->storage->hasFactory($key)) {
-            $definition = $this->storage->getFactory($key);
+        if ($this->storage->hasFactory($id)) {
+            $definition = $this->storage->getFactory($id);
 
             return $definition($this, ...$args);
         }
 
         // the key was not found
-        throw new NotFoundException("The key [$key] could not be found");
+        throw new NotFoundException("The key [$id] could not be found");
     }
 
     /**
@@ -172,7 +172,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * @param string $key The key to remove. Can also be an alias or bound interface.
      * @return bool        Whether the key and associated object were removed.
      */
-    public function remove(string $key)
+    public function remove(string $key): bool
     {
         return $this->storage->remove($key);
     }
@@ -185,7 +185,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @since  1.3.0 Introduced
      */
-    public function removeAlias($alias)
+    public function removeAlias(string $alias): bool
     {
         return $this->storage->removeAlias($alias);
     }
@@ -307,7 +307,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     /**
      * Resets the resolutions stack.
      */
-    private function resetStack()
+    private function resetStack(): void
     {
         \array_pop($this->stack);
     }
@@ -317,7 +317,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @param mixed $value Value to add.
      */
-    private function addToStack($value)
+    private function addToStack($value): void
     {
         $keys = \array_keys($this->stack);
         $this->stack[\end($keys)][] = $value;
@@ -330,7 +330,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * @return bool Whether the key was found.
      * @throws ContainerException This will never happen, but just to keep IDEs happy.
      */
-    private function resolveFromContainer(string $className)
+    private function resolveFromContainer(string $className): bool
     {
         if ($this->has($className)) {
             $this->addToStack($this->get($className));
@@ -350,7 +350,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @since 1.1.0 Introduced
      */
-    private function resolveParams($params, $args)
+    private function resolveParams(array $params, array $args): void
     {
         foreach ($params as $param) {
             $class = $param->getClass();
@@ -387,7 +387,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @since 1.0.1 Updated to resolve params with default values as a fallback.
      */
-    private function resolveParam(array $args, ReflectionParameter $param)
+    private function resolveParam(array $args, ReflectionParameter $param): void
     {
         $name = $param->name;
 
