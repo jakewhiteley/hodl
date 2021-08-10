@@ -17,13 +17,14 @@ use Hodl\Tests\Classes\NeedsResolving;
 use Hodl\Tests\Classes\NeedsServiceAndConstructorParams;
 use Hodl\Tests\Classes\NoConstructor;
 use Hodl\Tests\Classes\Resolver;
+use PHPUnit\Framework\TestCase;
 
-class ContainerTest extends \PHPUnit\Framework\TestCase
+class ContainerTest extends TestCase
 {
     /**
      * @test
      */
-    public function a_container_can_be_booted_and_extends_psr11()
+    public function a_container_can_be_booted_and_extends_psr11(): void
     {
         $hodl = new Container();
         $this->assertInstanceOf(\Psr\Container\ContainerInterface::class, $hodl);
@@ -32,41 +33,39 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function get_only_accepts_strings_as_a_key()
+    public function get_only_accepts_strings_as_a_key(): void
     {
         $hodl = new Container();
-
         $this->expectException(ContainerException::class);
-
         $hodl->get(12);
     }
 
     /**
      * @test
      */
-    public function keys_must_be_valid_namespaces()
+    public function keys_must_be_valid_namespaces(): void
     {
         $this->expectException(InvalidKeyException::class);
 
         $hodl = new Container();
-        $hodl = $hodl->add('alias', function () {
+        $hodl->add('alias', function () {
             return new DummyClass('bar');
         });
     }
 
     /**
      * @test
-     * @return Hodl\Container An instance of Container containing a DummyClass instance.
+     * @return \Hodl\Container An instance of Container containing a DummyClass instance.
      */
-    public function an_object_can_be_added_to_the_container()
+    public function an_object_can_be_added_to_the_container(): Container
     {
         $hodl = new Container();
 
-        $hodl->addSingleton('Hodl\Tests\Classes\DummyClass', function () {
+        $hodl->addSingleton(DummyClass::class, function () {
             return new DummyClass('bar');
         });
 
-        $this->assertTrue($hodl->has('Hodl\Tests\Classes\DummyClass'));
+        $this->assertTrue($hodl->has(DummyClass::class));
 
         return $hodl;
     }
@@ -74,12 +73,12 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      * @depends an_object_can_be_added_to_the_container
-     * @return Hodl\Container An instance of Container containing a DummyClass instance.
+     * @return \Hodl\Container|\Hodl\Tests\Hodl\Container
      */
     public function get_returns_the_same_class_instance_every_time(Container $hodl)
     {
-        $firstAttempt = $hodl->get('Hodl\Tests\Classes\DummyClass');
-        $secondAttempt = $hodl->get('Hodl\Tests\Classes\DummyClass');
+        $firstAttempt = $hodl->get(DummyClass::class);
+        $secondAttempt = $hodl->get(DummyClass::class);
 
         $this->assertSame($firstAttempt, $secondAttempt);
         $this->assertSame($firstAttempt->foo, $secondAttempt->foo);
@@ -92,47 +91,46 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
      * @test
      * @depends get_returns_the_same_class_instance_every_time
      */
-    public function get_throws_NotFoundException_when_key_not_present(Container $hodl)
+    public function get_throws_NotFoundException_when_key_not_present(Container $hodl): void
     {
-        $hodl->remove('Hodl\Tests\Classes\DummyClass');
+        $hodl->remove(DummyClass::class);
 
         $this->expectException(NotFoundException::class);
 
-        $hodl->get('Hodl\Tests\Classes\DummyClass');
+        $hodl->get(DummyClass::class);
     }
 
     /**
      * @test
      */
-    public function keys_cannot_be_overloaded()
+    public function keys_cannot_be_overloaded(): void
     {
         $hodl = new Container();
 
         $this->expectException(KeyExistsException::class);
 
-        $hodl->add('Hodl\Tests\Classes\DummyClass', function () {
+        $hodl->add(DummyClass::class, function () {
             return new DummyClass('bar');
         });
 
-        $hodl->add('Hodl\Tests\Classes\DummyClass', function () {
+        $hodl->add(DummyClass::class, function () {
             return new DummyClass('bar');
         });
     }
 
-
     /**
      * @test
-     * @return Hodl\Container An instance of Container containing a DummyClass instance.
+     * @return \Hodl\Container An instance of Container containing a DummyClass instance.
      */
-    public function an_object_can_be_added_to_the_container_as_a_factory()
+    public function an_object_can_be_added_to_the_container_as_a_factory(): Container
     {
         $hodl = new Container();
 
-        $hodl->add('Hodl\Tests\Classes\DummyClass', function () {
+        $hodl->add(DummyClass::class, function () {
             return new DummyClass('foo');
         });
 
-        $this->assertTrue($hodl->has('Hodl\Tests\Classes\DummyClass'));
+        $this->assertTrue($hodl->has(DummyClass::class));
 
         return $hodl;
     }
@@ -140,12 +138,12 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      * @depends an_object_can_be_added_to_the_container_as_a_factory
-     * @return Hodl\Container An instance of Container containing a DummyClass instance.
+     * @return \Hodl\Container An instance of Container containing a DummyClass instance.
      */
-    public function get_returns_a_different_factory_instance_every_time(Container $hodl)
+    public function get_returns_a_different_factory_instance_every_time(Container $hodl): Container
     {
-        $firstAttempt = $hodl->get('Hodl\Tests\Classes\DummyClass');
-        $secondAttempt = $hodl->get('Hodl\Tests\Classes\DummyClass');
+        $firstAttempt = $hodl->get(DummyClass::class);
+        $secondAttempt = $hodl->get(DummyClass::class);
 
         $this->assertSame($firstAttempt->foo, $secondAttempt->foo);
         $this->assertNotEquals($firstAttempt->bar, $secondAttempt->bar);
@@ -157,11 +155,11 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
      * @test
      * @depends get_returns_a_different_factory_instance_every_time
      */
-    public function a_factory_can_be_removed(Container $hodl)
+    public function a_factory_can_be_removed(Container $hodl): Container
     {
-        $this->assertTrue($hodl->remove('Hodl\Tests\Classes\DummyClass'));
-        $this->assertFalse($hodl->has('Hodl\Tests\Classes\DummyClass'));
-        $this->assertFalse($hodl->remove('Hodl\Tests\Classes\DummyClass'));
+        $this->assertTrue($hodl->remove(DummyClass::class));
+        $this->assertFalse($hodl->has(DummyClass::class));
+        $this->assertFalse($hodl->remove(DummyClass::class));
 
         return $hodl;
     }
@@ -169,24 +167,24 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function container_impliments_array_access_correctly()
+    public function container_impliments_array_access_correctly(): void
     {
         $hodl = new Container();
 
-        $hodl['Hodl\Tests\Classes\DummyClass'] = function () {
+        $hodl[DummyClass::class] = static function () {
             return new DummyClass('foo');
         };
 
-        $this->assertTrue(isset($hodl['Hodl\Tests\Classes\DummyClass']));
-        $this->assertTrue($hodl['Hodl\Tests\Classes\DummyClass'] instanceof DummyClass);
-        unset($hodl['Hodl\Tests\Classes\DummyClass']);
-        $this->assertFalse(isset($hodl['Hodl\Tests\Classes\DummyClass']));
+        $this->assertTrue(isset($hodl[DummyClass::class]));
+        $this->assertInstanceOf(DummyClass::class, $hodl[DummyClass::class]);
+        unset($hodl[DummyClass::class]);
+        $this->assertFalse(isset($hodl[DummyClass::class]));
     }
 
     /**
      * @test
      */
-    public function an_object_can_be_resolved_explicitly()
+    public function an_object_can_be_resolved_explicitly(): void
     {
         $hodl = new Container();
 
@@ -195,7 +193,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('foobar', $resolved->resolver->var);
         $this->assertEquals('nested', $resolved->resolver->nested->var);
 
-        $doesntNeedResolving = $hodl->resolve('Hodl\Tests\Classes\DummyClass');
+        $doesntNeedResolving = $hodl->resolve(DummyClass::class);
 
         $this->assertEquals('not_set', $doesntNeedResolving->foo);
 
@@ -207,11 +205,11 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function an_object_can_be_resolved_explicitly_with_params()
+    public function an_object_can_be_resolved_explicitly_with_params(): void
     {
         $hodl = new Container();
 
-        $doesntNeedResolving = $hodl->resolve('Hodl\Tests\Classes\DummyClass', ['string' => 'has_been_set']);
+        $doesntNeedResolving = $hodl->resolve(DummyClass::class, ['string' => 'has_been_set']);
 
         $this->assertEquals('has_been_set', $doesntNeedResolving->foo);
     }
@@ -219,24 +217,24 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function a_specific_instance_can_be_added_to_the_container()
+    public function a_specific_instance_can_be_added_to_the_container(): void
     {
         $hodl = new Container();
 
         $instance = new DummyClass('specific');
 
-        $hodl->addInstance('Hodl\Tests\Classes\DummyClass', $instance);
+        $hodl->addInstance(DummyClass::class, $instance);
 
-        $this->assertTrue($hodl->has('Hodl\Tests\Classes\DummyClass'));
-        $this->assertEquals($hodl->get('Hodl\Tests\Classes\DummyClass')->foo, 'specific');
+        $this->assertTrue($hodl->has(DummyClass::class));
+        $this->assertEquals('specific', $hodl->get(DummyClass::class)->foo);
 
-        $hodl->remove('Hodl\Tests\Classes\DummyClass');
-        $this->assertFalse($hodl->has('Hodl\Tests\Classes\DummyClass'));
+        $hodl->remove(DummyClass::class);
+        $this->assertFalse($hodl->has(DummyClass::class));
 
         $hodl->addInstance($instance);
 
-        $this->assertTrue($hodl->has('Hodl\Tests\Classes\DummyClass'));
-        $this->assertEquals($hodl->get('Hodl\Tests\Classes\DummyClass')->foo, 'specific');
+        $this->assertTrue($hodl->has(DummyClass::class));
+        $this->assertEquals('specific', $hodl->get(DummyClass::class)->foo);
 
         $this->expectException(ContainerException::class);
 
@@ -246,7 +244,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function trying_to_resolve_a_nonexistent_class_throws_an_exception()
+    public function trying_to_resolve_a_nonexistent_class_throws_an_exception(): void
     {
         $hodl = new Container();
         $this->expectException(ContainerException::class);
@@ -257,37 +255,37 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function objects_in_the_container_take_precedence_when_resolving()
+    public function objects_in_the_container_take_precedence_when_resolving(): void
     {
         $hodl = new Container();
 
-        $hodl->addSingleton('Hodl\Tests\Classes\NeedsResolving', function ($di) {
-            return $di->resolve('Hodl\Tests\Classes\NeedsResolving');
+        $hodl->addSingleton(NeedsResolving::class, function ($di) {
+            return $di->resolve(NeedsResolving::class);
         });
 
         // was resolved using global scope classes
-        $this->assertEquals('foobar', $hodl->get('Hodl\Tests\Classes\NeedsResolving')->resolver->var);
+        $this->assertEquals('foobar', $hodl->get(NeedsResolving::class)->resolver->var);
 
-        $hodl->remove('Hodl\Tests\Classes\NeedsResolving');
+        $hodl->remove(NeedsResolving::class);
 
-        $hodl->add('Hodl\Tests\Classes\NeedsResolving', function ($di) {
-            return $di->resolve('Hodl\Tests\Classes\NeedsResolving');
+        $hodl->add(NeedsResolving::class, function ($di) {
+            return $di->resolve(NeedsResolving::class);
         });
 
-        $hodl->addSingleton('Hodl\Tests\Classes\Resolver', function ($di) {
-            return $di->resolve('Hodl\Tests\Classes\Resolver');
+        $hodl->addSingleton(Resolver::class, function ($di) {
+            return $di->resolve(Resolver::class);
         });
 
-        $hodl->get('Hodl\Tests\Classes\Resolver')->var = 'resolved';
+        $hodl->get(Resolver::class)->var = 'resolved';
 
         // was resolved using global scope classes
-        $this->assertEquals('resolved', $hodl->get('Hodl\Tests\Classes\NeedsResolving')->resolver->var);
+        $this->assertEquals('resolved', $hodl->get(NeedsResolving::class)->resolver->var);
     }
 
     /**
      * @test
      */
-    public function a_method_can_be_resolved_explicitly()
+    public function a_method_can_be_resolved_explicitly(): void
     {
         $hodl = new Container();
 
@@ -296,13 +294,13 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $this->assertInstanceOf(Resolver::class, $shouldBeResolver);
 
         // Assert that the resolution was recursive.
-        $this->assertInstanceOf(\Hodl\Tests\Classes\Nested\Resolver::class, $shouldBeResolver->nested);
+        $this->assertInstanceOf(Classes\Nested\Resolver::class, $shouldBeResolver->nested);
     }
 
     /**
      * @test
      */
-    public function an_exception_is_thrown_if_resolving_a_non_existant_method()
+    public function an_exception_is_thrown_if_resolving_a_non_existant_method(): void
     {
         $hodl = new Container();
 
@@ -315,7 +313,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function an_exception_is_thrown_if_resolving_a_non_existant_method_on_non_existant_class()
+    public function an_exception_is_thrown_if_resolving_a_non_existant_method_on_non_existant_class(): void
     {
         $hodl = new Container();
 
@@ -327,7 +325,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function a_method_can_be_resolved_for_as_existing_instances()
+    public function a_method_can_be_resolved_for_as_existing_instances(): void
     {
         $hodl = new Container();
 
@@ -336,18 +334,18 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $shouldBeResolver = $hodl->resolveMethod($instance, 'hasNoStaticParams');
 
         $this->assertInstanceOf(Resolver::class, $shouldBeResolver);
-        $this->assertInstanceOf(\Hodl\Tests\Classes\Nested\Resolver::class, $shouldBeResolver->nested);
+        $this->assertInstanceOf(Classes\Nested\Resolver::class, $shouldBeResolver->nested);
 
         $shouldBeResolver = $hodl->resolveMethod($instance, 'isStatic');
 
         $this->assertInstanceOf(Resolver::class, $shouldBeResolver);
-        $this->assertInstanceOf(\Hodl\Tests\Classes\Nested\Resolver::class, $shouldBeResolver->nested);
+        $this->assertInstanceOf(Classes\Nested\Resolver::class, $shouldBeResolver->nested);
     }
 
     /**
      * @test
      */
-    public function a_method_can_be_resolved_with_no_args()
+    public function a_method_can_be_resolved_with_no_args(): void
     {
         $hodl = new Container();
 
@@ -361,7 +359,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function objects_in_the_container_take_precedence_when_resolving_methods()
+    public function objects_in_the_container_take_precedence_when_resolving_methods(): void
     {
         $hodl = new Container();
 
@@ -379,7 +377,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function methods_can_be_resolved_with_args()
+    public function methods_can_be_resolved_with_args(): void
     {
         $hodl = new Container();
 
@@ -393,7 +391,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function services_can_be_aliased()
+    public function services_can_be_aliased(): Container
     {
         $hodl = new Container();
 
@@ -404,7 +402,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $hodl->alias(DummyClass::class, 'dummy');
         $this->assertTrue($hodl->has('dummy'));
 
-        $this->assertTrue($hodl->get('dummy') instanceof DummyClass);
+        $this->assertInstanceOf(DummyClass::class, $hodl->get('dummy'));
 
         return $hodl;
     }
@@ -413,10 +411,10 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
      * @test
      * @depends services_can_be_aliased
      */
-    public function services_can_be_removed_by_alias($hodl)
+    public function services_can_be_removed_by_alias($hodl): void
     {
-        $this->assertTrue($hodl->get('dummy') instanceof DummyClass);
-        $this->assertTrue($hodl->get(DummyClass::class) instanceof DummyClass);
+        $this->assertInstanceOf(DummyClass::class, $hodl->get('dummy'));
+        $this->assertInstanceOf(DummyClass::class, $hodl->get(DummyClass::class));
         $hodl->remove('dummy');
         $this->assertFalse($hodl->has('dummy'));
         $this->assertFalse($hodl->has(DummyClass::class));
@@ -425,7 +423,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function services_have_aliases_removed_upon_remove()
+    public function services_have_aliases_removed_upon_remove(): void
     {
         $hodl = new Container();
 
@@ -435,8 +433,8 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
         $hodl->alias(DummyClass::class, 'dummy');
 
-        $this->assertTrue($hodl->get('dummy') instanceof DummyClass);
-        $this->assertTrue($hodl->get(DummyClass::class) instanceof DummyClass);
+        $this->assertInstanceOf(DummyClass::class, $hodl->get('dummy'));
+        $this->assertInstanceOf(DummyClass::class, $hodl->get(DummyClass::class));
         $hodl->remove(DummyClass::class);
         $this->assertFalse($hodl->has('dummy'));
         $this->assertFalse($hodl->has(DummyClass::class));
@@ -445,7 +443,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function singletons_can_be_aliased()
+    public function singletons_can_be_aliased(): Container
     {
         $hodl = new Container();
 
@@ -457,8 +455,8 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
         $this->assertTrue($hodl->has('dummy'));
 
         $singleton = $hodl->get('dummy');
-        $this->assertTrue($singleton instanceof DummyClass);
-        $this->assertEquals($singleton->foo, 'foo');
+        $this->assertInstanceOf(DummyClass::class, $singleton);
+        $this->assertEquals('foo', $singleton->foo);
         $this->assertEquals($singleton->foo, $hodl->get('dummy')->foo);
         return $hodl;
     }
@@ -467,10 +465,10 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
      * @test
      * @depends singletons_can_be_aliased
      */
-    public function singletons_can_be_removed_by_alias($hodl)
+    public function singletons_can_be_removed_by_alias($hodl): void
     {
-        $this->assertTrue($hodl->get('dummy') instanceof DummyClass);
-        $this->assertTrue($hodl->get(DummyClass::class) instanceof DummyClass);
+        $this->assertInstanceOf(DummyClass::class, $hodl->get('dummy'));
+        $this->assertInstanceOf(DummyClass::class, $hodl->get(DummyClass::class));
         $hodl->remove('dummy');
         $this->assertFalse($hodl->has('dummy'));
         $this->assertFalse($hodl->has(DummyClass::class));
@@ -479,7 +477,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function singletons_have_aliases_removed_upon_remove()
+    public function singletons_have_aliases_removed_upon_remove(): void
     {
         $hodl = new Container();
 
@@ -489,8 +487,8 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
         $hodl->alias(DummyClass::class, 'dummy');
 
-        $this->assertTrue($hodl->get('dummy') instanceof DummyClass);
-        $this->assertTrue($hodl->get(DummyClass::class) instanceof DummyClass);
+        $this->assertInstanceOf(DummyClass::class, $hodl->get('dummy'));
+        $this->assertInstanceOf(DummyClass::class, $hodl->get(DummyClass::class));
         $hodl->remove(DummyClass::class);
         $this->assertFalse($hodl->has('dummy'));
         $this->assertFalse($hodl->has(DummyClass::class));
@@ -499,7 +497,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function services_can_be_bound_to_interfaces()
+    public function services_can_be_bound_to_interfaces(): void
     {
         $hodl = new Container();
 
@@ -509,17 +507,17 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
         $hodl->bind(Concrete::class, Contract::class);
 
-        $this->assertTrue($hodl->get(Concrete::class) instanceof Contract);
+        $this->assertInstanceOf(Contract::class, $hodl->get(Concrete::class));
 
         $resolved = $hodl->resolve(NeedsContract::class);
 
-        $this->assertTrue($resolved->contract instanceof Contract);
+        $this->assertInstanceOf(Contract::class, $resolved->contract);
     }
 
     /**
      * @test
      */
-    public function bindings_can_be_removed_from_a_service()
+    public function bindings_can_be_removed_from_a_service(): void
     {
         $hodl = new Container();
 
@@ -529,7 +527,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
         $hodl->bind(Concrete::class, Contract::class);
 
-        $this->assertTrue($hodl->get(Contract::class) instanceof Concrete);
+        $this->assertInstanceOf(Concrete::class, $hodl->get(Contract::class));
         $hodl->removeAlias(Contract::class);
 
         $this->assertTrue($hodl->has(Concrete::class));
@@ -541,7 +539,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function removeAlias_returns_false_if_no_action_taken()
+    public function removeAlias_returns_false_if_no_action_taken(): void
     {
         $hodl = new Container();
         $this->assertFalse($hodl->removeAlias('doesntExist'));
@@ -550,7 +548,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function ConcreteClassNotFoundException_is_thrown_when_resolving_an_unbound_interface()
+    public function ConcreteClassNotFoundException_is_thrown_when_resolving_an_unbound_interface(): void
     {
         $hodl = new Container();
 
@@ -561,7 +559,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function instances_can_be_bound_to_interfaces()
+    public function instances_can_be_bound_to_interfaces(): void
     {
         $hodl = new Container();
 
@@ -571,17 +569,17 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
 
         $hodl->bind(Concrete::class, Contract::class);
 
-        $this->assertTrue($hodl->get(Concrete::class) instanceof Contract);
+        $this->assertInstanceOf(Contract::class, $hodl->get(Concrete::class));
 
         $resolved = $hodl->resolve(NeedsContract::class);
 
-        $this->assertTrue($resolved->contract instanceof Contract);
+        $this->assertInstanceOf(Contract::class, $resolved->contract);
     }
 
     /**
      * @test
      */
-    public function instances_can_be_made_with_parameters()
+    public function instances_can_be_made_with_parameters(): void
     {
         $hodl = new Container();
 
@@ -596,7 +594,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function instances_can_be_resolved_with_parameters()
+    public function instances_can_be_resolved_with_parameters(): void
     {
         $hodl = new Container();
 
@@ -611,7 +609,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function instances_can_be_resolved_with_parameters_and_services()
+    public function instances_can_be_resolved_with_parameters_and_services(): void
     {
         $hodl = new Container();
 
@@ -628,7 +626,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function singletons_can_be_made_with_parameters()
+    public function singletons_can_be_made_with_parameters(): void
     {
         $hodl = new Container();
 
@@ -643,7 +641,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function singletons_can_be_resolved_with_parameters()
+    public function singletons_can_be_resolved_with_parameters(): void
     {
         $hodl = new Container();
 
@@ -658,7 +656,7 @@ class ContainerTest extends \PHPUnit\Framework\TestCase
     /**
      * @test
      */
-    public function singletons_can_be_resolved_with_parameters_and_services()
+    public function singletons_can_be_resolved_with_parameters_and_services(): void
     {
         $hodl = new Container();
 
