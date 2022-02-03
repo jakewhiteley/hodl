@@ -18,6 +18,7 @@ use Hodl\Tests\Classes\NeedsServiceAndConstructorParams;
 use Hodl\Tests\Classes\NoConstructor;
 use Hodl\Tests\Classes\Resolver;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 
 class ContainerTest extends TestCase
 {
@@ -27,17 +28,7 @@ class ContainerTest extends TestCase
     public function a_container_can_be_booted_and_extends_psr11(): void
     {
         $hodl = new Container();
-        $this->assertInstanceOf(\Psr\Container\ContainerInterface::class, $hodl);
-    }
-
-    /**
-     * @test
-     */
-    public function get_only_accepts_strings_as_a_key(): void
-    {
-        $hodl = new Container();
-        $this->expectException(ContainerException::class);
-        $hodl->get(12);
+        $this->assertInstanceOf(ContainerInterface::class, $hodl);
     }
 
     /**
@@ -288,8 +279,23 @@ class ContainerTest extends TestCase
     public function a_method_can_be_resolved_explicitly(): void
     {
         $hodl = new Container();
+        $dummy = new DummyClass();
 
-        $shouldBeResolver = $hodl->resolveMethod(DummyClass::class, 'hasNoStaticParams');
+        $shouldBeResolver = $hodl->resolveMethod($dummy, 'hasNoStaticParams');
+
+        $this->assertInstanceOf(Resolver::class, $shouldBeResolver);
+
+        // Assert that the resolution was recursive.
+        $this->assertInstanceOf(Classes\Nested\Resolver::class, $shouldBeResolver->nested);
+    }
+
+    /**
+     * @test
+     */
+    public function a_static_method_can_be_resolved_explicitly(): void
+    {
+        $hodl = new Container();
+        $shouldBeResolver = $hodl->resolveMethod(DummyClass::class, 'isStatic');
 
         $this->assertInstanceOf(Resolver::class, $shouldBeResolver);
 
@@ -308,6 +314,18 @@ class ContainerTest extends TestCase
         $dummy = new DummyClass();
         // Check if an exception thrown if the class method exist.
         $hodl->resolveMethod($dummy, 'DoesntExist');
+    }
+
+    /**
+     * @test
+     * @requires PHP >= 8.0
+     */
+    public function an_exception_is_thrown_if_resolving_a_non_static_method_statically(): void
+    {
+        $this->expectException(ContainerException::class);
+
+        $hodl = new Container();
+        $shouldBeResolver = $hodl->resolveMethod(DummyClass::class, 'hasNoStaticParams');
     }
 
     /**
@@ -351,9 +369,9 @@ class ContainerTest extends TestCase
 
         $instance = new DummyClass();
 
-        $this->assertTrue($hodl->resolveMethod(DummyClass::class, 'hasNoParams'));
+        $this->assertTrue($hodl->resolveMethod($instance, 'hasNoParams'));
 
-        $this->assertTrue($hodl->resolveMethod($instance, 'staticHasNoParams'));
+        $this->assertTrue($hodl->resolveMethod(DummyClass::class, 'staticHasNoParams'));
     }
 
     /**
@@ -362,6 +380,7 @@ class ContainerTest extends TestCase
     public function objects_in_the_container_take_precedence_when_resolving_methods(): void
     {
         $hodl = new Container();
+        $instance = new DummyClass();
 
         $hodl->addSingleton(Resolver::class, function ($di) {
             return $di->resolve(Resolver::class);
@@ -369,7 +388,7 @@ class ContainerTest extends TestCase
 
         $hodl->get(Resolver::class)->var = 'resolved';
 
-        $shouldBeResolved = $hodl->resolveMethod(DummyClass::class, 'hasNoStaticParams');
+        $shouldBeResolved = $hodl->resolveMethod($instance, 'hasNoStaticParams');
 
         $this->assertEquals('resolved', $shouldBeResolved->var);
     }
@@ -380,8 +399,9 @@ class ContainerTest extends TestCase
     public function methods_can_be_resolved_with_args(): void
     {
         $hodl = new Container();
+        $instance = new DummyClass();
 
-        $shouldBeResolved = $hodl->resolveMethod(DummyClass::class, 'hasParams', [
+        $shouldBeResolved = $hodl->resolveMethod($instance, 'hasParams', [
             'param' => 'not null',
         ]);
 
@@ -599,7 +619,7 @@ class ContainerTest extends TestCase
         $hodl = new Container();
 
         $hodl->add(CanHaveConstructorParams::class, function (Container $hodl, $foo) {
-            return $hodl->resolve(CanHaveConstructorParams::class, compact('foo'));
+            return $hodl->resolve(CanHaveConstructorParams::class, \compact('foo'));
         });
 
         $object = $hodl->get(CanHaveConstructorParams::class, 'chaz');
@@ -614,7 +634,7 @@ class ContainerTest extends TestCase
         $hodl = new Container();
 
         $hodl->add(NeedsServiceAndConstructorParams::class, function (Container $hodl, $foo) {
-            return $hodl->resolve(NeedsServiceAndConstructorParams::class, compact('foo'));
+            return $hodl->resolve(NeedsServiceAndConstructorParams::class, \compact('foo'));
         });
 
         $object = $hodl->get(NeedsServiceAndConstructorParams::class, 'chaz');
@@ -646,7 +666,7 @@ class ContainerTest extends TestCase
         $hodl = new Container();
 
         $hodl->addSingleton(CanHaveConstructorParams::class, function (Container $hodl, $foo) {
-            return $hodl->resolve(CanHaveConstructorParams::class, compact('foo'));
+            return $hodl->resolve(CanHaveConstructorParams::class, \compact('foo'));
         });
 
         $object = $hodl->get(CanHaveConstructorParams::class, 'chaz');
@@ -661,7 +681,7 @@ class ContainerTest extends TestCase
         $hodl = new Container();
 
         $hodl->addSingleton(NeedsServiceAndConstructorParams::class, function (Container $hodl, $foo) {
-            return $hodl->resolve(NeedsServiceAndConstructorParams::class, compact('foo'));
+            return $hodl->resolve(NeedsServiceAndConstructorParams::class, \compact('foo'));
         });
 
         $object = $hodl->get(NeedsServiceAndConstructorParams::class, 'chaz');

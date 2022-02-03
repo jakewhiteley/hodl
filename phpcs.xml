@@ -6,6 +6,6 @@
 
     <arg name="colors"/>
 
-    <rule ref="PSR2"/>
+    <rule ref="PSR12"/>
 
 </ruleset>

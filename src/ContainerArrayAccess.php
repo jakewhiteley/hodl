@@ -1,4 +1,5 @@
 <?php
+
 namespace Hodl;
 
 use ArrayAccess;
@@ -11,8 +12,6 @@ class ContainerArrayAccess implements ArrayAccess
     /**
      * Sets the value at specified offset.
      *
-     * @since 1.0.0
-     *
      * @param  string  $offset The key to set
      * @param  \closure $value  The value to set
      */
@@ -23,8 +22,6 @@ class ContainerArrayAccess implements ArrayAccess
 
     /**
      * Checks if a given offset exists.
-     *
-     * @since 1.0.0
      *
      * @param  string  $offset The key to set
      * @return  bool
@@ -37,8 +34,6 @@ class ContainerArrayAccess implements ArrayAccess
     /**
      * Gets the value at specified offset.
      *
-     * @since 1.0.0
-     *
      * @param  string  $offset The key to get
      * @return  object|closure  $value  The object instance or closure if a factory class
      */
@@ -49,8 +44,6 @@ class ContainerArrayAccess implements ArrayAccess
 
     /**
      * Unsets the value at specified offset.
-     *
-     * @since 1.0.0
      *
      * @param  string  $offset The key to set
      * @return  bool

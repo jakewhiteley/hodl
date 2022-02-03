@@ -20,17 +20,13 @@ class Container extends ContainerArrayAccess implements ContainerInterface
 {
     /**
      * Holds the object storage class.
-     *
-     * @var ObjectStorage
      */
-    private $storage;
+    private ObjectStorage $storage;
 
     /**
      * Stores current resolution stack.
-     *
-     * @var array
      */
-    private $stack = [];
+    private array $stack = [];
 
     /**
      * Boot up.
@@ -74,11 +70,11 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * @param string|object $key    The key to add the instance as. Can be omitted.
      *                              If an object is passed and the key is omitted, the namespaced class name
      *                              will be used instead.
-     * @param object        $object The object instance to add.
+     * @param object|null   $object $object The object instance to add.
      *
-     * @throws ContainerException If no object was supplied.
+     * @throws \Hodl\Exceptions\ContainerException If no object was supplied.
      */
-    public function addInstance($key, $object = null): void
+    public function addInstance($key, ?object $object = null): void
     {
         if (\is_object($key)) {
             $this->storage->instance(\get_class($key), $key);
@@ -94,8 +90,6 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @param string $key   The service key to attach the alias to.
      * @param string $alias The alias to attach.
-     *
-     * @since  1.3.0 Introduced.
      */
     public function alias(string $key, string $alias): void
     {
@@ -109,8 +103,6 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @param string $key       The concrete fully qualified class name to bind.
      * @param string $interface The interface fully qualified name to bind.
-     *
-     * @since  1.3.0 Introduced.
      */
     public function bind(string $key, string $interface): void
     {
@@ -137,15 +129,9 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @throws Exceptions\NotFoundException  If the $key was not present.
      * @throws Exceptions\ContainerException If the $key is not a valid string.
-     *
-     * @since 1.4.0 Allows any number of args to be passed when resolving from a factory definition.
      */
     public function get(string $id, ...$args)
     {
-        if (!\is_string($id) || empty($id)) {
-            throw new ContainerException("$id must be a string");
-        }
-
         if ($this->storage->hasStored($id)) {
             return $this->storage->getStored($id);
         }
@@ -182,8 +168,6 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @param string $alias The alias to remove.
      * @return bool
-     *
-     * @since  1.3.0 Introduced
      */
     public function removeAlias(string $alias): bool
     {
@@ -205,7 +189,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * @throws ContainerException If the class does not exist to resolve.
      * @throws \ReflectionException
      */
-    public function resolve(string $class, array $args = [])
+    public function resolve(string $class, array $args = []): object
     {
         $this->stack[] = [];
 
@@ -221,7 +205,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
         // if there is no constructor, just return new instance
         if ($constructor === null) {
             $this->resetStack();
-            return new $class;
+            return new $class();
         }
 
         // get constructor params
@@ -230,7 +214,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
         // If there is a constructor, but no params
         if (\count($params) === 0) {
             $this->resetStack();
-            return new $class;
+            return new $class();
         }
 
         $this->resolveParams($params, $args);
@@ -248,15 +232,13 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * If a key exists within the container it will be injected, otherwise a new instance of the
      * dependency will be injected.
      *
-     * @param string|Object $class  Class of which the method is a member.
+     * @param string|object $class  Class of which the method is a member.
      * @param string        $method Name of method to resolve.
      * @param array         $args   Array of arguments to pass to resolved classes as [param name => value].
      * @return mixed The return from the executed method
      *
      * @throws ContainerException
      * @throws ReflectionException
-     *
-     * @since 1.1.0 Introduced
      */
     public function resolveMethod($class, string $method, array $args = [])
     {
@@ -289,10 +271,10 @@ class Container extends ContainerArrayAccess implements ContainerInterface
             if ($reflectionMethod->isStatic() === true) {
                 $this->resetStack();
                 return $reflectionMethod->invoke(null);
-            } else {
-                $this->resetStack();
-                return $reflectionMethod->invoke($classInstance);
             }
+
+            $this->resetStack();
+            return $reflectionMethod->invoke($classInstance);
         }
 
         $this->resolveParams($params, $args);
@@ -342,18 +324,16 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     /**
      * Loop through all params of a method/constructor to resolve, and attempt to resolve them.
      *
-     * @param array $params List of params to loop through.
+     * @param array<ReflectionParameter> $params List of params to loop through.
      * @param array $args   Arguments passed to the parent resolve method.
      *
      * @throws ContainerException
      * @throws \ReflectionException
-     *
-     * @since 1.1.0 Introduced
      */
     private function resolveParams(array $params, array $args): void
     {
         foreach ($params as $param) {
-            $class = $param->getClass();
+            $class = $param->getType();
 
             // if the param is not a class, check $args for the value
             if (\is_null($class)) {
@@ -368,7 +348,9 @@ class Container extends ContainerArrayAccess implements ContainerInterface
                 continue;
             }
 
-            if ($class->isInterface()) {
+            $reflectionClass = new ReflectionClass($className);
+
+            if ($reflectionClass->isInterface()) {
                 throw new ConcreteClassNotFoundException("$className is an interface with no bound implementation.");
             }
 
@@ -382,10 +364,6 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @param array $args  List of arguments passed to resolve.
      * @param       $param $key  The current parameter reflection class.
-     *
-     * @throws \ReflectionException
-     *
-     * @since 1.0.1 Updated to resolve params with default values as a fallback.
      */
     private function resolveParam(array $args, ReflectionParameter $param): void
     {
