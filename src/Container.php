@@ -333,29 +333,35 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     private function resolveParams(array $params, array $args): void
     {
         foreach ($params as $param) {
-            $class = $param->getType();
+            $reflectionType = $param->getType();
 
-            // if the param is not a class, check $args for the value
-            if (\is_null($class)) {
+            // if the param is not type-hinted, check $args for the value
+            if (\is_null($reflectionType)) {
                 $this->resolveParam($args, $param);
                 continue;
             }
 
-            $className = $class->getName();
+            $typeName = $reflectionType->getName();
 
             // if the class exists in the container, inject it
-            if ($this->resolveFromContainer($className)) {
+            if ($this->resolveFromContainer($typeName)) {
                 continue;
             }
 
-            $reflectionClass = new ReflectionClass($className);
+            if (class_exists($typeName) || interface_exists($typeName)) {
+                $reflectionClass = new ReflectionClass($typeName);
 
-            if ($reflectionClass->isInterface()) {
-                throw new ConcreteClassNotFoundException("$className is an interface with no bound implementation.");
+                if ($reflectionClass->isInterface()) {
+                    throw new ConcreteClassNotFoundException("$typeName is an interface with no bound implementation.");
+                }
+
+                // else the param is a class, so run $this->resolve on it
+                $this->addToStack($this->resolve($typeName, $args));
+                continue;
             }
 
-            // else the param is a class, so run $this->resolve on it
-            $this->addToStack($this->resolve($className, $args));
+            // It was type-hinted but not a defined class, so assume it's a primitive and try to resolve
+            $this->resolveParam($args, $param);
         }
     }
 
