@@ -3,9 +3,10 @@
 namespace Hodl;
 
 use ArrayAccess;
+use Closure;
 
 /**
- * ArrayAccess implementaion for Hodl\Container
+ * ArrayAccess implementation for Hodl\Container
  */
 class ContainerArrayAccess implements ArrayAccess
 {
@@ -13,9 +14,9 @@ class ContainerArrayAccess implements ArrayAccess
      * Sets the value at specified offset.
      *
      * @param  string  $offset The key to set
-     * @param  \closure $value  The value to set
+     * @param  Closure $value  The value to set
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet($offset, $value): void
     {
         $this->add($offset, $value);
     }
@@ -26,7 +27,7 @@ class ContainerArrayAccess implements ArrayAccess
      * @param  string  $offset The key to set
      * @return  bool
      */
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
         return $this->has($offset);
     }
@@ -35,9 +36,9 @@ class ContainerArrayAccess implements ArrayAccess
      * Gets the value at specified offset.
      *
      * @param  string  $offset The key to get
-     * @return  object|closure  $value  The object instance or closure if a factory class
+     * @return  object $value  The object instance or closure if a factory class
      */
-    public function offsetGet($offset)
+    public function offsetGet($offset): object
     {
         return $this->get($offset);
     }
@@ -46,10 +47,9 @@ class ContainerArrayAccess implements ArrayAccess
      * Unsets the value at specified offset.
      *
      * @param  string  $offset The key to set
-     * @return  bool
      */
-    public function offsetUnset($offset)
+    public function offsetUnset($offset): void
     {
-        return $this->remove($offset);
+        $this->remove($offset);
     }
 }

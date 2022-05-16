@@ -16,6 +16,7 @@ use Hodl\Tests\Classes\NeedsContract;
 use Hodl\Tests\Classes\NeedsResolving;
 use Hodl\Tests\Classes\NeedsServiceAndConstructorParams;
 use Hodl\Tests\Classes\NoConstructor;
+use Hodl\Tests\Classes\PrimitivesTest;
 use Hodl\Tests\Classes\Resolver;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -201,6 +202,18 @@ class ContainerTest extends TestCase
         $hodl = new Container();
 
         $doesntNeedResolving = $hodl->resolve(DummyClass::class, ['string' => 'has_been_set']);
+
+        $this->assertEquals('has_been_set', $doesntNeedResolving->foo);
+    }
+
+    /**
+     * @test
+     */
+    public function an_object_can_be_resolved_explicitly_with_typehinted_primitive_params(): void
+    {
+        $hodl = new Container();
+
+        $doesntNeedResolving = $hodl->resolve(PrimitivesTest::class, ['string' => 'has_been_set']);
 
         $this->assertEquals('has_been_set', $doesntNeedResolving->foo);
     }
