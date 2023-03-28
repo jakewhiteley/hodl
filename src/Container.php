@@ -4,6 +4,8 @@ namespace Hodl;
 
 use Hodl\Exceptions\ConcreteClassNotFoundException;
 use Hodl\Exceptions\ContainerException;
+use Hodl\Exceptions\InvalidKeyException;
+use Hodl\Exceptions\KeyExistsException;
 use Hodl\Exceptions\NotFoundException;
 use Psr\Container\ContainerInterface;
 use ReflectionClass;
@@ -41,9 +43,11 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * Classes added via this method will return as a new instance when retrieved.
      *
-     * @param string   $key     The key to store the object under
+     * @param string $key The key to store the object under
      * @param callable $closure A closure which returns a new instance of the desired object
      *                          A reference to this DIContainer is passed as a param to the closure
+     * @throws InvalidKeyException
+     * @throws KeyExistsException
      */
     public function add(string $key, callable $closure): void
     {
@@ -55,9 +59,11 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * This class is initialized when first retrieved via get(), and is persistent unless explicitly destroyed.
      *
-     * @param string   $key     The key to store the object under.
+     * @param string $key The key to store the object under.
      * @param callable $closure A closure which returns a new instance of the desired object
      *                          A reference to this DIContainer is passed as a param to the closure
+     * @throws InvalidKeyException
+     * @throws KeyExistsException
      */
     public function addSingleton(string $key, callable $closure): void
     {
@@ -67,18 +73,18 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     /**
      * Add a specific object instance to the container.
      *
-     * @param string|object $key    The key to add the instance as. Can be omitted.
+     * @param object|string $key    The key to add the instance as. Can be omitted.
      *                              If an object is passed and the key is omitted, the namespaced class name
      *                              will be used instead.
      * @param object|null   $object $object The object instance to add.
      *
-     * @throws \Hodl\Exceptions\ContainerException If no object was supplied.
+     * @throws ContainerException If no object was supplied.
      */
-    public function addInstance($key, ?object $object = null): void
+    public function addInstance(object|string $key, ?object $object = null): void
     {
-        if (\is_object($key)) {
-            $this->storage->instance(\get_class($key), $key);
-        } elseif (\is_object($object)) {
+        if (is_object($key)) {
+            $this->storage->instance(get_class($key), $key);
+        } elseif (is_object($object)) {
             $this->storage->instance($key, $object);
         } else {
             throw new ContainerException('An object instance must be passed');
@@ -124,18 +130,45 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * Retrieves an object for a given key.
      *
      * @param string $id   The key to lookup.
+     * @return object|bool The requested object.
+     *
+     * @throws Exceptions\NotFoundException  If the $key was not present.
+     * @throws Exceptions\ContainerException If the $key is not a valid string.
+     */
+    public function get(string $id)
+    {
+        if ($this->storage->hasStored($id)) {
+            return $this->storage->getStored($id);
+        }
+
+        // key exists but hasn't been initialized yet
+        if ($this->storage->hasObject($id)) {
+            $this->storage->store($id, $this->storage->getDefinition($id)($this));
+            return $this->storage->getStored($id);
+        }
+
+        if ($this->storage->hasFactory($id)) {
+            $definition = $this->storage->getFactory($id);
+
+            return $definition($this);
+        }
+
+        // the key was not found
+        throw new NotFoundException("The key [$id] could not be found");
+    }
+
+    /**
+     * Retrieves an object for a given key while providing arguments.
+     *
+     * @param string $id   The key to lookup.
      * @param array  $args The key to lookup.
      * @return object|bool The requested object.
      *
      * @throws Exceptions\NotFoundException  If the $key was not present.
      * @throws Exceptions\ContainerException If the $key is not a valid string.
      */
-    public function get(string $id, ...$args)
+    public function getWith(string $id, ...$args): object|bool
     {
-        if ($this->storage->hasStored($id)) {
-            return $this->storage->getStored($id);
-        }
-
         // key exists but hasn't been initialized yet
         if ($this->storage->hasObject($id)) {
             $this->storage->store($id, $this->storage->getDefinition($id)($this, ...$args));
@@ -187,7 +220,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * @return object        The resolved class
      *
      * @throws ContainerException If the class does not exist to resolve.
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public function resolve(string $class, array $args = []): object
     {
@@ -212,14 +245,14 @@ class Container extends ContainerArrayAccess implements ContainerInterface
         $params = $constructor->getParameters();
 
         // If there is a constructor, but no params
-        if (\count($params) === 0) {
+        if (count($params) === 0) {
             $this->resetStack();
             return new $class();
         }
 
         $this->resolveParams($params, $args);
 
-        $resolutions = \end($this->stack);
+        $resolutions = end($this->stack);
         $this->resetStack();
 
         // return the resolved class
@@ -232,7 +265,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * If a key exists within the container it will be injected, otherwise a new instance of the
      * dependency will be injected.
      *
-     * @param string|object $class  Class of which the method is a member.
+     * @param object|string $class  Class of which the method is a member.
      * @param string        $method Name of method to resolve.
      * @param array         $args   Array of arguments to pass to resolved classes as [param name => value].
      * @return mixed The return from the executed method
@@ -240,13 +273,13 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * @throws ContainerException
      * @throws ReflectionException
      */
-    public function resolveMethod($class, string $method, array $args = [])
+    public function resolveMethod(object|string $class, string $method, array $args = []): mixed
     {
-        if (!\is_callable([$class, $method])) {
-            if (\is_string($class)) {
+        if (!is_callable([$class, $method])) {
+            if (is_string($class)) {
                 $error = $class . "::$method() does not exist or is not callable so could not be resolved";
             } else {
-                $error = \get_class($class) . "::$method() does not exist or is not callable so could not be resolved";
+                $error = get_class($class) . "::$method() does not exist or is not callable so could not be resolved";
             }
 
             throw new ContainerException($error);
@@ -256,7 +289,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
 
         if ($reflectionMethod->isStatic()) {
             $classInstance = null;
-        } elseif (\is_string($class)) {
+        } elseif (is_string($class)) {
             $classInstance = new $class();
         } else {
             $classInstance = $class;
@@ -266,20 +299,20 @@ class Container extends ContainerArrayAccess implements ContainerInterface
         $params = $reflectionMethod->getParameters();
 
         // If there is a constructor, but no params
-        if (\count($params) === 0) {
+        if (count($params) === 0) {
+            $this->resetStack();
+
             // as we are dealing with a static method
             if ($reflectionMethod->isStatic() === true) {
-                $this->resetStack();
                 return $reflectionMethod->invoke(null);
             }
 
-            $this->resetStack();
             return $reflectionMethod->invoke($classInstance);
         }
 
         $this->resolveParams($params, $args);
 
-        $resolutions = \end($this->stack);
+        $resolutions = end($this->stack);
         $this->resetStack();
 
         // return the resolved class
@@ -291,7 +324,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      */
     private function resetStack(): void
     {
-        \array_pop($this->stack);
+        array_pop($this->stack);
     }
 
     /**
@@ -299,10 +332,10 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      *
      * @param mixed $value Value to add.
      */
-    private function addToStack($value): void
+    private function addToStack(mixed $value): void
     {
-        $keys = \array_keys($this->stack);
-        $this->stack[\end($keys)][] = $value;
+        $keys = array_keys($this->stack);
+        $this->stack[end($keys)][] = $value;
     }
 
     /**
@@ -328,7 +361,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
      * @param array $args   Arguments passed to the parent resolve method.
      *
      * @throws ContainerException
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     private function resolveParams(array $params, array $args): void
     {
@@ -336,7 +369,7 @@ class Container extends ContainerArrayAccess implements ContainerInterface
             $reflectionType = $param->getType();
 
             // if the param is not type-hinted, check $args for the value
-            if (\is_null($reflectionType)) {
+            if (is_null($reflectionType)) {
                 $this->resolveParam($args, $param);
                 continue;
             }

@@ -620,7 +620,7 @@ class ContainerTest extends TestCase
             return new CanHaveConstructorParams($foo);
         });
 
-        $object = $hodl->get(CanHaveConstructorParams::class, 'bar');
+        $object = $hodl->getWith(CanHaveConstructorParams::class, 'bar');
         $this->assertEquals('bar', $object->getFoo());
     }
 
@@ -635,7 +635,7 @@ class ContainerTest extends TestCase
             return $hodl->resolve(CanHaveConstructorParams::class, \compact('foo'));
         });
 
-        $object = $hodl->get(CanHaveConstructorParams::class, 'chaz');
+        $object = $hodl->getWith(CanHaveConstructorParams::class, 'chaz');
         $this->assertEquals('chaz', $object->getFoo());
     }
 
@@ -650,7 +650,7 @@ class ContainerTest extends TestCase
             return $hodl->resolve(NeedsServiceAndConstructorParams::class, \compact('foo'));
         });
 
-        $object = $hodl->get(NeedsServiceAndConstructorParams::class, 'chaz');
+        $object = $hodl->getWith(NeedsServiceAndConstructorParams::class, 'chaz');
 
         $this->assertEquals('chaz', $object->getFoo());
         $this->assertInstanceOf(Resolver::class, $object->resolver);
@@ -667,7 +667,7 @@ class ContainerTest extends TestCase
             return new CanHaveConstructorParams($foo);
         });
 
-        $object = $hodl->get(CanHaveConstructorParams::class, 'bar');
+        $object = $hodl->getWith(CanHaveConstructorParams::class, 'bar');
         $this->assertEquals('bar', $object->getFoo());
     }
 
@@ -682,7 +682,7 @@ class ContainerTest extends TestCase
             return $hodl->resolve(CanHaveConstructorParams::class, \compact('foo'));
         });
 
-        $object = $hodl->get(CanHaveConstructorParams::class, 'chaz');
+        $object = $hodl->getWith(CanHaveConstructorParams::class, 'chaz');
         $this->assertEquals('chaz', $object->getFoo());
     }
 
@@ -697,7 +697,7 @@ class ContainerTest extends TestCase
             return $hodl->resolve(NeedsServiceAndConstructorParams::class, \compact('foo'));
         });
 
-        $object = $hodl->get(NeedsServiceAndConstructorParams::class, 'chaz');
+        $object = $hodl->getWith(NeedsServiceAndConstructorParams::class, 'chaz');
 
         $this->assertEquals('chaz', $object->getFoo());
         $this->assertInstanceOf(Resolver::class, $object->resolver);
