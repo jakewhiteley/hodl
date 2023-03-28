@@ -355,17 +355,17 @@ class Container extends ContainerArrayAccess implements ContainerInterface
     /**
      * Loop through all params of a method/constructor to resolve, and attempt to resolve them.
      *
-     * @since 1.1.0
-     *
-     * @throws ContainerException
-     *
      * @param $params List of params to loop through.
      * @param $args   Arguments passed to the parent resolve method.
+     * @throws ContainerException|ReflectionException
+     *
+     * @since 1.1.0
+     *
      */
     private function resolveParams($params, $args)
     {
         foreach ($params as $param) {
-            $class = $param->getClass();
+            $class = $param->getType();
 
             // if the param is not a class, check $args for the value
             if (\is_null($class)) {
@@ -380,7 +380,9 @@ class Container extends ContainerArrayAccess implements ContainerInterface
                 continue;
             }
 
-            if ($class->isInterface()) {
+            $reflectionClass = new ReflectionClass($className);
+
+            if ($reflectionClass->isInterface()) {
                 throw new ConcreteClassNotFoundException("$className is an interface with no bound implementation.");
             }
 

@@ -2,3 +2,5 @@ vendor/
 coverage/
 .idea
 index.php
+
+.php_cs.cache
