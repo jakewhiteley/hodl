@@ -31,8 +31,8 @@ class ObjectStorage
     /**
      * Add an object definition.
      *
-     * @throws \Hodl\Exceptions\InvalidKeyException
-     * @throws \Hodl\Exceptions\KeyExistsException
+     * @throws InvalidKeyException
+     * @throws KeyExistsException
      */
     public function object(string $key, callable $closure): void
     {
@@ -45,8 +45,8 @@ class ObjectStorage
      *
      * Like an object, but a new instance is returned when accessed.
      *
-     * @throws \Hodl\Exceptions\InvalidKeyException
-     * @throws \Hodl\Exceptions\KeyExistsException
+     * @throws InvalidKeyException
+     * @throws KeyExistsException
      */
     public function factory(string $key, callable $closure): void
     {
@@ -57,8 +57,8 @@ class ObjectStorage
     /**
      * Add an instance definition.
      *
-     * @throws \Hodl\Exceptions\InvalidKeyException
-     * @throws \Hodl\Exceptions\KeyExistsException
+     * @throws InvalidKeyException
+     * @throws KeyExistsException
      */
     public function instance(string $key, object $object): void
     {
@@ -132,11 +132,7 @@ class ObjectStorage
      */
     public function getDefinition(string $key): callable
     {
-        if (isset($this->definitions['instance'][$key])) {
-            return $this->definitions['instance'][$key];
-        }
-
-        return $this->definitions['instance'][$this->aliases[$key]];
+        return $this->definitions['instance'][$key] ?? $this->definitions['instance'][$this->aliases[$key]];
     }
 
     /**
@@ -213,7 +209,7 @@ class ObjectStorage
      */
     protected function removeAliasFor(string $key): void
     {
-        $aliases = \array_keys($this->aliases, $key);
+        $aliases = array_keys($this->aliases, $key);
 
         if (!empty($aliases)) {
             foreach ($aliases as $alias) {
@@ -225,12 +221,12 @@ class ObjectStorage
     /**
      * Performs some safety checks on a key when adding to the container.
      *
-     * @throws \Hodl\Exceptions\KeyExistsException  If the key already exists.
-     * @throws \Hodl\Exceptions\InvalidKeyException If the key is not a valid class name.
+     * @throws KeyExistsException  If the key already exists.
+     * @throws InvalidKeyException If the key is not a valid class name.
      */
     protected function checkKey(string $key): void
     {
-        if (!\class_exists($key)) {
+        if (!class_exists($key)) {
             throw new InvalidKeyException("Key [$key] was invalid. All keys must be valid class names");
         }
 
